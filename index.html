@@ -1,330 +1,1099 @@
-Viewed index.html:20-48
-
 ```html
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Credit Ledger</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Borrower Ledger</title>
 
-  <!-- Inter font -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-
-  <!-- Tailwind CSS (CDN) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+
   <script>
-    // Tailwind customisation – modern dark/slate look + glass‑morphism utilities
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
           colors: {
-            primary: "hsl(222, 81%, 54%)",      /* vibrant blue */
-            secondary: "hsl(210, 40%, 96%)",    /* subtle light */
-            surface: "hsl(210, 20%, 12%)"       /* dark surface for dark mode */
-          },
-          fontFamily: { sans: ["Inter", "sans-serif"] },
-          backdropBlur: { xs: "2px" }
+            primary: "hsl(222, 81%, 54%)",
+            secondary: "hsl(210, 40%, 96%)",
+            surface: "hsl(210, 20%, 12%)"
+          }
         }
       }
     };
   </script>
 
   <style>
-    /* Glass‑morphism card style */
-    .glass-card {
-      @apply bg-white/20 backdrop-blur-xs rounded-xl border border-white/10 shadow-lg;
+    .borrower-card {
+      background: rgba(255, 255, 255, 0.88);
+      border: 2px solid rgba(0, 0, 0, 0.08);
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     }
 
     @keyframes fadeIn {
       from {
         opacity: 0;
+        transform: scale(.97);
       }
 
       to {
         opacity: 1;
+        transform: scale(1);
       }
     }
 
     .animate-fade-in {
-      animation: fadeIn 0.2s ease-out;
+      animation: fadeIn .2s ease-out;
     }
   </style>
 </head>
 
-<body
-  class="min-h-screen bg-gradient-to-br from-primary to-secondary font-sans text-gray-800 dark:bg-surface dark:text-gray-200">
-  <!-- Header -->
+<body class="min-h-screen bg-gradient-to-br from-primary to-secondary font-sans text-gray-800">
+
+  <!-- HEADER -->
   <header class="p-4 flex items-center justify-between">
-    <h1 class="text-2xl font-bold text-white dark:text-gray-100">Credit Ledger</h1>
-    <button id="addBtn"
-      class="flex items-center gap-2 bg-white/80 hover:bg-white transition rounded-full px-4 py-2 text-sm font-medium shadow-md">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24"
-        stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-      </svg>
-      + Add Customer
+    <h1 class="text-2xl font-bold text-white">Borrower Ledger</h1>
+
+    <button id="addBorrowerBtn" class="bg-white px-4 py-2 rounded-full font-medium shadow-md hover:bg-gray-100">
+      + Add Borrower
     </button>
   </header>
 
-  <!-- Dashboard grid -->
+  <!-- BORROWER LIST -->
   <main class="p-4">
-    <section id="customerGrid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <!-- Cards inserted by JS -->
+    <section id="borrowerGrid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     </section>
   </main>
 
-  <!-- Add / Edit Modal -->
-  <div id="modalOverlay" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 hidden">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4 p-6 relative animate-fade-in">
-      <button id="closeModal" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
 
-      <h2 id="modalTitle" class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-        Add Customer
+  <!-- ADD BORROWER MODAL -->
+  <div id="borrowerModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 animate-fade-in">
+
+      <h2 id="borrowerModalTitle" class="text-xl font-semibold mb-4">
+        Add Borrower
       </h2>
 
-      <form id="customerForm" class="space-y-4">
+      <form id="borrowerForm" class="space-y-4">
+
         <div>
-          <label class="block text-sm font-medium mb-1" for="nameInput">Name</label>
-          <input id="nameInput" type="text" required
-            class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary" />
+          <label class="block font-medium">Name</label>
+          <input id="nameInput" type="text" required class="w-full border rounded-md px-3 py-2">
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-1" for="phoneInput">Phone</label>
-          <input id="phoneInput" type="tel"
-            class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary" />
+          <label class="block font-medium">Phone</label>
+          <input id="phoneInput" type="tel" class="w-full border rounded-md px-3 py-2">
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-1" for="addressInput">Address</label>
-          <textarea id="addressInput" rows="2"
-            class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+          <label class="block font-medium">Address</label>
+          <textarea id="addressInput" class="w-full border rounded-md px-3 py-2"></textarea>
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-1" for="amountInput">Amount (₹)</label>
-          <input id="amountInput" type="number" step="0.01" required
-            class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary" />
+          <label class="block font-medium">First Amount Taken (₹)</label>
+          <input id="amountInput" type="number" min="0" step="0.01" required class="w-full border rounded-md px-3 py-2">
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-1" for="dateInput">Date</label>
-          <input id="dateInput" type="date" required
-            class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary" />
+          <label class="block font-medium">Date</label>
+          <input id="dateInput" type="date" required class="w-full border rounded-md px-3 py-2">
         </div>
 
         <div>
-          <label class="block text-sm font-medium mb-1" for="photoInput">Photo (optional)</label>
-          <input id="photoInput" type="file" accept="image/*" class="w-full" />
+          <label class="block font-medium">Photo (optional)</label>
+          <input id="photoInput" type="file" accept="image/*" class="w-full">
         </div>
 
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" id="cancelBtn" class="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 transition">
+        <div class="flex justify-end gap-2">
+          <button type="button" id="cancelBorrowerBtn" class="px-4 py-2 rounded-md bg-gray-200">
             Cancel
           </button>
-          <button type="submit" class="px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 transition">
+
+          <button type="submit" class="px-4 py-2 rounded-md bg-primary text-white">
             Save
           </button>
         </div>
+
       </form>
     </div>
   </div>
 
-  <!-- Detail Modal -->
-  <div id="detailOverlay" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 hidden">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg mx-4 p-6 relative animate-fade-in">
-      <button id="closeDetail" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+
+  <!-- BORROWER PROFILE -->
+  <div id="profileModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto animate-fade-in">
+
+      <button id="closeProfile" class="float-right text-gray-500 text-xl">
+        ✕
       </button>
 
-      <h2 id="detailName" class="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-200"></h2>
+      <h2 id="profileName" class="text-2xl font-bold mb-4">
+      </h2>
 
-      <div class="flex flex-col sm:flex-row gap-4">
-        <div class="flex-shrink-0">
-          <img id="detailPhoto" src="" alt="Avatar"
-            class="w-32 h-32 rounded-full object-cover border-2 border-primary" />
+      <div class="grid sm:grid-cols-2 gap-3 mb-5">
+
+        <div class="border-2 p-3 rounded">
+          <b>Phone</b>
+          <p id="profilePhone"></p>
         </div>
 
-        <div class="flex-1 space-y-2">
-          <p><span class="font-medium">Phone:</span> <span id="detailPhone"></span></p>
-          <p><span class="font-medium">Address:</span> <span id="detailAddress"></span></p>
-          <p><span class="font-medium">Date Added:</span> <span id="detailDate"></span></p>
-          <p><span class="font-medium">Amount Owed:</span> ₹ <span id="detailAmount"></span></p>
+        <div class="border-2 p-3 rounded">
+          <b>Address</b>
+          <p id="profileAddress"></p>
         </div>
+
+        <div class="border-2 p-3 rounded">
+          <b>Total Borrowed</b>
+          <p id="profileTotalBorrowed"></p>
+        </div>
+
+        <div class="border-2 p-3 rounded">
+          <b>Total Paid</b>
+          <p id="profileTotalPaid"></p>
+        </div>
+
+        <div class="border-2 p-3 rounded">
+          <b>Remaining</b>
+          <p id="profileRemaining"></p>
+        </div>
+
       </div>
 
-      <div class="flex justify-end gap-2 mt-6">
-        <button id="editBtn" class="px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 transition">
+      <!-- BORROWING HISTORY -->
+      <h3 class="text-xl font-semibold mb-3">
+        Borrowing History
+      </h3>
+
+      <div id="borrowingList" class="space-y-3 mb-6"></div>
+
+      <!-- ACTION BUTTONS -->
+      <div class="flex flex-wrap gap-2">
+
+        <button id="addAmountBtn" class="px-4 py-2 bg-primary text-white rounded-md">
+          + Add
+        </button>
+
+        <button id="paidBtn" class="px-4 py-2 bg-green-600 text-white rounded-md">
+          Paid
+        </button>
+
+        <button id="editBorrowerBtn" class="px-4 py-2 bg-gray-600 text-white rounded-md">
           Edit
         </button>
-        <button id="deleteBtn" class="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition">
+
+        <button id="deleteBorrowerBtn" class="px-4 py-2 bg-red-600 text-white rounded-md">
           Delete
         </button>
+
       </div>
+
+      <p id="borrowMessage" class="mt-5 font-semibold text-lg">
+      </p>
+
     </div>
   </div>
 
-  <!-- JavaScript -->
+
+  <!-- ADD AMOUNT MODAL -->
+  <div id="amountModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+
+      <h2 class="text-xl font-semibold mb-4">
+        Add Borrowing
+      </h2>
+
+      <form id="amountForm" class="space-y-4">
+
+        <div>
+          <label class="block font-medium">Amount (₹)</label>
+          <input id="newAmountInput" type="number" min="0" step="0.01" required
+            class="w-full border rounded-md px-3 py-2">
+        </div>
+
+        <div>
+          <label class="block font-medium">Date</label>
+          <input id="newDateInput" type="date" required class="w-full border rounded-md px-3 py-2">
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button type="button" id="cancelAmountBtn" class="px-4 py-2 bg-gray-200 rounded-md">
+            Cancel
+          </button>
+
+          <button type="submit" class="px-4 py-2 bg-primary text-white rounded-md">
+            Add
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+
+  <!-- PAID MODAL -->
+  <div id="paidModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+
+      <h2 class="text-xl font-semibold mb-4">
+        Money Returned
+      </h2>
+
+      <form id="paidForm">
+
+        <label class="block font-medium mb-1">
+          How much money did he return?
+        </label>
+
+        <input id="paidInput" type="number" min="0" step="0.01" required
+          class="w-full border rounded-md px-3 py-2 mb-4">
+
+        <div class="flex justify-end gap-2">
+
+          <button type="button" id="cancelPaidBtn" class="px-4 py-2 bg-gray-200 rounded-md">
+            Cancel
+          </button>
+
+          <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md">
+            Submit
+          </button>
+
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+
   <script>
-    /* ---------- LocalStorage helpers ---------- */
-    const LS_KEY = "creditLedgerCustomers";
-    const generateId = () => '_' + Math.random().toString(36).substr(2, 9);
-    const loadCustomers = () => JSON.parse(localStorage.getItem(LS_KEY) || '[]');
-    const saveCustomers = data => localStorage.setItem(LS_KEY, JSON.stringify(data));
-    const fmtCurrency = n => Number(n).toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
 
-    /* ---------- UI Rendering ---------- */
-    const renderGrid = () => {
-      const customers = loadCustomers();
-      const grid = document.getElementById('customerGrid');
-      grid.innerHTML = '';
+    const STORAGE_KEY = "borrowerLedger";
 
-      if (customers.length === 0) {
-        grid.innerHTML = '<p class="col-span-full text-center text-gray-600">No customers yet. Click “+ Add Customer” to start.</p>';
+    let selectedBorrowerId = null;
+
+
+    function generateId() {
+      return "_" + Math.random().toString(36).substring(2, 11);
+    }
+
+
+    function loadBorrowers() {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    }
+
+
+    function saveBorrowers(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+
+    function money(value) {
+      return Number(value).toLocaleString("en-IN", {
+        style: "currency",
+        currency: "INR"
+      });
+    }
+
+
+    function today() {
+      return new Date().toISOString().split("T")[0];
+    }
+
+
+    /*
+      Calculate totals.
+  
+      Each borrowing entry contains:
+      amount
+      date
+      paid
+    */
+
+    function getTotals(borrower) {
+
+      let totalBorrowed = 0;
+      let totalPaid = 0;
+
+      borrower.borrowings.forEach(item => {
+        totalBorrowed += Number(item.amount);
+        totalPaid += Number(item.paid || 0);
+      });
+
+      return {
+        totalBorrowed,
+        totalPaid,
+        remaining: totalBorrowed - totalPaid
+      };
+    }
+
+
+    /*
+      MAIN BORROWER CARDS
+    */
+
+    function renderBorrowers() {
+
+      const borrowers = loadBorrowers();
+      const grid = document.getElementById("borrowerGrid");
+
+      grid.innerHTML = "";
+
+      if (borrowers.length === 0) {
+
+        grid.innerHTML = `
+        <p class="col-span-full text-center text-white text-lg">
+          No borrowers yet. Click "+ Add Borrower" to start.
+        </p>
+      `;
+
         return;
       }
 
-      customers.forEach(c => {
-        const card = document.createElement('div');
-        card.className = 'glass-card p-4 cursor-pointer hover:scale-[1.02] transition transform';
-        card.dataset.id = c.id;
 
-        const avatar = c.photo ||
-          `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(c.name)}`;
+      borrowers.forEach(borrower => {
+
+        const totals = getTotals(borrower);
+
+        const card = document.createElement("div");
+
+        card.className =
+          "borrower-card p-5 cursor-pointer hover:scale-[1.02] transition";
+
+
+        let statusText = "";
+
+        if (totals.remaining === 0) {
+
+          statusText =
+            `<span class="text-green-600 font-bold">Completed</span>`;
+
+        } else if (totals.remaining > 0) {
+
+          statusText =
+            `<span class="text-red-600 font-bold">
+            ${money(totals.remaining)} remaining
+          </span>`;
+
+        } else {
+
+          statusText =
+            `<span class="text-blue-600 font-bold">
+            Can borrow ${money(Math.abs(totals.remaining))}
+          </span>`;
+        }
+
 
         card.innerHTML = `
-          <div class="flex items-center gap-4">
-            <img src="${avatar}" alt="Avatar"
-                 class="w-14 h-14 rounded-full object-cover border-2 border-primary"/>
-            <div class="flex-1">
-              <h3 class="font-semibold text-lg truncate">${c.name}</h3>
-              <p class="text-sm text-primary font-medium">${fmtCurrency(c.amount)}</p>
-              <p class="text-xs text-gray-600 dark:text-gray-400">${c.phone || ''} • ${new Date(c.date).toLocaleDateString()}</p>
-            </div>
-          </div>`;
-        card.addEventListener('click', () => openDetail(c.id));
-        grid.appendChild(card);
-      });
-    };
 
-    /* ---------- Modal handling ---------- */
-    const modalOverlay = document.getElementById('modalOverlay');
-    const detailOverlay = document.getElementById('detailOverlay');
-    const addBtn = document.getElementById('addBtn');
-    const closeModalBtn = document.getElementById('closeModal');
-    const cancelBtn = document.getElementById('cancelBtn');
-    const customerForm = document.getElementById('customerForm');
-    const modalTitle = document.getElementById('modalTitle');
-    const dateInput = document.getElementById('dateInput');
+        <div class="flex items-center gap-4">
 
-    let editMode = false;
-    let editId = null;
+          <img
+            src="${borrower.photo ||
+          `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(borrower.name)}`}"
+            class="w-16 h-16 rounded-full border-2 border-primary object-cover">
 
-    const openModal = (mode = 'add', data = null) => {
-      editMode = mode === 'edit';
-      modalTitle.textContent = editMode ? 'Edit Customer' : 'Add Customer';
-      if (editMode && data) {
-        document.getElementById('nameInput').value = data.name;
-        document.getElementById('phoneInput').value = data.phone || '';
-        document.getElementById('addressInput').value = data.address || '';
-        document.getElementById('amountInput').value = data.amount;
-        document.getElementById('dateInput').value = data.date;
-        document.getElementById('photoInput').value = '';
-        editId = data.id;
-      } else {
-        customerForm.reset();
-        // default date = today
-        const today = new Date().toISOString().split('T')[0];
-        dateInput.value = today;
-        editId = null;
-      }
-      modalOverlay.classList.remove('hidden');
-    };
+          <div class="flex-1">
 
-    const closeModal = () => modalOverlay.classList.add('hidden');
-    const closeDetail = () => detailOverlay.classList.add('hidden');
+            <h3 class="font-bold text-lg">
+              ${borrower.name}
+            </h3>
 
-    addBtn.addEventListener('click', () => openModal('add'));
-    closeModalBtn.addEventListener('click', closeModal);
-    cancelBtn.addEventListener('click', closeModal);
+            <p class="font-semibold">
+              ${statusText}
+            </p>
 
-    /* ---------- Form submit (Add / Edit) ---------- */
-    customerForm.addEventListener('submit', async e => {
-      e.preventDefault();
-      const name = document.getElementById('nameInput').value.trim();
-      const phone = document.getElementById('phoneInput').value.trim();
-      const address = document.getElementById('addressInput').value.trim();
-      const date = document.getElementById('dateInput').value;
-      const amount = document.getElementById('amountInput').value;
-      const fileInp = document.getElementById('photoInput');
+          </div>
 
-      let photo = null;
-      if (fileInp.files && fileInp.files[0]) {
-        const file = fileInp.files[0];
-        photo = await new Promise(res => {
-          const r = new FileReader();
-          r.onload = () => res(r.result);
-          r.readAsDataURL(file);
+        </div>
+      `;
+
+
+        card.addEventListener("click", () => {
+          openProfile(borrower.id);
         });
-      }
 
-      const customers = loadCustomers();
 
-      if (editMode && editId) {
-        const idx = customers.findIndex(c => c.id === editId);
-        if (idx > -1) {
-          customers[idx] = { ...customers[idx], name, phone, address, date, amount, photo: photo ?? customers[idx].photo };
+        grid.appendChild(card);
+
+      });
+    }
+
+
+    /*
+      ADD BORROWER
+    */
+
+    document.getElementById("addBorrowerBtn")
+      .addEventListener("click", () => {
+
+        document.getElementById("borrowerModal")
+          .classList.remove("hidden");
+
+        document.getElementById("borrowerForm").reset();
+
+        document.getElementById("dateInput").value = today();
+
+      });
+
+
+    document.getElementById("cancelBorrowerBtn")
+      .addEventListener("click", () => {
+
+        document.getElementById("borrowerModal")
+          .classList.add("hidden");
+
+      });
+
+
+    document.getElementById("borrowerForm")
+      .addEventListener("submit", async function (e) {
+
+        e.preventDefault();
+
+
+        const name =
+          document.getElementById("nameInput").value.trim();
+
+        const phone =
+          document.getElementById("phoneInput").value.trim();
+
+        const address =
+          document.getElementById("addressInput").value.trim();
+
+        const amount =
+          Number(document.getElementById("amountInput").value);
+
+        const date =
+          document.getElementById("dateInput").value;
+
+        const photoInput =
+          document.getElementById("photoInput");
+
+
+        let photo = null;
+
+
+        if (photoInput.files[0]) {
+
+          photo = await new Promise(resolve => {
+
+            const reader = new FileReader();
+
+            reader.onload = () => resolve(reader.result);
+
+            reader.readAsDataURL(photoInput.files[0]);
+
+          });
+
         }
+
+
+        const borrowers = loadBorrowers();
+
+
+        borrowers.push({
+
+          id: generateId(),
+
+          name,
+
+          phone,
+
+          address,
+
+          photo,
+
+          borrowings: [
+
+            {
+              id: generateId(),
+              amount,
+              date,
+              paid: 0
+            }
+
+          ]
+
+        });
+
+
+        saveBorrowers(borrowers);
+
+        document.getElementById("borrowerModal")
+          .classList.add("hidden");
+
+        renderBorrowers();
+
+      });
+
+
+    /*
+      OPEN PROFILE
+    */
+
+    function openProfile(id) {
+
+      selectedBorrowerId = id;
+
+      const borrowers = loadBorrowers();
+
+      const borrower =
+        borrowers.find(b => b.id === id);
+
+      if (!borrower) return;
+
+
+      const totals = getTotals(borrower);
+
+
+      document.getElementById("profileName")
+        .textContent = borrower.name;
+
+
+      document.getElementById("profilePhone")
+        .textContent = borrower.phone || "—";
+
+
+      document.getElementById("profileAddress")
+        .textContent = borrower.address || "—";
+
+
+      document.getElementById("profileTotalBorrowed")
+        .textContent = money(totals.totalBorrowed);
+
+
+      document.getElementById("profileTotalPaid")
+        .textContent = money(totals.totalPaid);
+
+
+      document.getElementById("profileRemaining")
+        .textContent =
+        totals.remaining > 0
+          ? money(totals.remaining)
+          : "₹0";
+
+
+      renderBorrowingHistory(borrower);
+
+
+      /*
+        Display special message
+      */
+
+      const message =
+        document.getElementById("borrowMessage");
+
+
+      if (totals.remaining === 0) {
+
+        message.textContent = "Completed";
+        message.className =
+          "mt-5 font-semibold text-lg text-green-600";
+
+      } else if (totals.remaining < 0) {
+
+        message.textContent =
+          `He can borrow ${money(Math.abs(totals.remaining))}
+         amount of product in your shop.`;
+
+        message.className =
+          "mt-5 font-semibold text-lg text-blue-600";
+
       } else {
-        customers.push({ id: generateId(), name, phone, address, date, amount, photo });
+
+        message.textContent =
+          `Remaining amount: ${money(totals.remaining)}`;
+
+        message.className =
+          "mt-5 font-semibold text-lg text-red-600";
       }
 
-      saveCustomers(customers);
-      renderGrid();
-      closeModal();
-    });
 
-    /* ---------- Detail view ---------- */
-    const openDetail = id => {
-      const customers = loadCustomers();
-      const cust = customers.find(c => c.id === id);
-      if (!cust) return;
+      document.getElementById("profileModal")
+        .classList.remove("hidden");
+    }
 
-      document.getElementById('detailName').textContent = cust.name;
-      document.getElementById('detailPhone').textContent = cust.phone || '—';
-      document.getElementById('detailAddress').textContent = cust.address || '—';
-      document.getElementById('detailDate').textContent = new Date(cust.date).toLocaleDateString();
-      document.getElementById('detailAmount').textContent = fmtCurrency(cust.amount);
-      document.getElementById('detailPhoto').src = cust.photo ||
-        `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(cust.name)}`;
 
-      document.getElementById('editBtn').onclick = () => {
-        closeDetail();
-        openModal('edit', cust);
-      };
-      document.getElementById('deleteBtn').onclick = () => {
-        if (confirm('Delete this customer permanently?')) {
-          const updated = customers.filter(c => c.id !== id);
-          saveCustomers(updated);
-          renderGrid();
-          closeDetail();
+    /*
+      BORROWING HISTORY
+    */
+
+    function renderBorrowingHistory(borrower) {
+
+      const list =
+        document.getElementById("borrowingList");
+
+      list.innerHTML = "";
+
+
+      borrower.borrowings.forEach((item, index) => {
+
+        const remaining =
+          Number(item.amount) - Number(item.paid || 0);
+
+
+        let status = "";
+
+
+        if (remaining <= 0) {
+
+          status =
+            `<span class="text-green-600 font-bold">
+            ✅ Completed
+          </span>`;
+
+        } else if (item.paid > 0) {
+
+          status =
+            `<span class="text-orange-600 font-bold">
+            ${money(remaining)} remaining
+          </span>`;
+
+        } else {
+
+          status =
+            `<span class="text-red-600 font-bold">
+            Pending
+          </span>`;
         }
-      };
-      detailOverlay.classList.remove('hidden');
-    };
 
-    document.getElementById('closeDetail').addEventListener('click', closeDetail);
 
-    /* ---------- Initialise ---------- */
-    renderGrid();
+        const row = document.createElement("div");
+
+        row.className =
+          "border-2 rounded-lg p-4";
+
+
+        row.innerHTML = `
+
+        <div class="flex justify-between items-center">
+
+          <div>
+
+            <p class="font-bold">
+              ${money(item.amount)}
+            </p>
+
+            <p class="text-sm text-gray-500">
+              Date: ${new Date(item.date)
+            .toLocaleDateString("en-IN")}
+            </p>
+
+            ${item.paid > 0
+            ?
+            `<p class="text-sm text-green-600">
+                Paid: ${money(item.paid)}
+              </p>`
+            : ""
+          }
+
+          </div>
+
+          <div>
+            ${status}
+          </div>
+
+        </div>
+      `;
+
+
+        list.appendChild(row);
+
+      });
+    }
+
+
+    /*
+      ADD MORE BORROWING
+    */
+
+    document.getElementById("addAmountBtn")
+      .addEventListener("click", () => {
+
+        document.getElementById("amountModal")
+          .classList.remove("hidden");
+
+        document.getElementById("amountForm").reset();
+
+        document.getElementById("newDateInput")
+          .value = today();
+
+      });
+
+
+    document.getElementById("cancelAmountBtn")
+      .addEventListener("click", () => {
+
+        document.getElementById("amountModal")
+          .classList.add("hidden");
+
+      });
+
+
+    document.getElementById("amountForm")
+      .addEventListener("submit", function (e) {
+
+        e.preventDefault();
+
+
+        const amount =
+          Number(document.getElementById("newAmountInput").value);
+
+        const date =
+          document.getElementById("newDateInput").value;
+
+
+        const borrowers = loadBorrowers();
+
+        const borrower =
+          borrowers.find(b => b.id === selectedBorrowerId);
+
+
+        if (!borrower) return;
+
+
+        borrower.borrowings.push({
+
+          id: generateId(),
+
+          amount,
+
+          date,
+
+          paid: 0
+
+        });
+
+
+        saveBorrowers(borrowers);
+
+
+        document.getElementById("amountModal")
+          .classList.add("hidden");
+
+
+        openProfile(selectedBorrowerId);
+
+        renderBorrowers();
+
+      });
+
+
+    /*
+      PAID BUTTON
+    */
+
+    document.getElementById("paidBtn")
+      .addEventListener("click", () => {
+
+        const borrowers = loadBorrowers();
+
+        const borrower =
+          borrowers.find(b => b.id === selectedBorrowerId);
+
+        if (!borrower) return;
+
+
+        const totals = getTotals(borrower);
+
+
+        if (totals.remaining <= 0) {
+
+          alert("There is no remaining amount to pay.");
+
+          return;
+        }
+
+
+        document.getElementById("paidInput").value = "";
+
+
+        document.getElementById("paidModal")
+          .classList.remove("hidden");
+
+      });
+
+
+    document.getElementById("cancelPaidBtn")
+      .addEventListener("click", () => {
+
+        document.getElementById("paidModal")
+          .classList.add("hidden");
+
+      });
+
+
+    /*
+      PAYMENT PROCESSING
+  
+      Payment is matched against the oldest
+      unpaid borrowing first.
+    */
+
+    document.getElementById("paidForm")
+      .addEventListener("submit", function (e) {
+
+        e.preventDefault();
+
+
+        let payment =
+          Number(document.getElementById("paidInput").value);
+
+
+        if (payment <= 0) {
+
+          alert("Enter a valid amount.");
+
+          return;
+        }
+
+
+        const borrowers = loadBorrowers();
+
+        const borrower =
+          borrowers.find(b => b.id === selectedBorrowerId);
+
+
+        if (!borrower) return;
+
+
+        const totals = getTotals(borrower);
+
+
+        /*
+          If payment is greater than the current
+          debt, the extra becomes credit.
+        */
+
+        let remainingPayment = payment;
+
+
+        for (const item of borrower.borrowings) {
+
+          const unpaid =
+            Number(item.amount) - Number(item.paid || 0);
+
+
+          if (unpaid <= 0) continue;
+
+
+          const amountToPay =
+            Math.min(remainingPayment, unpaid);
+
+
+          item.paid =
+            Number(item.paid || 0) + amountToPay;
+
+
+          remainingPayment -= amountToPay;
+
+
+          if (remainingPayment <= 0) break;
+
+        }
+
+
+        /*
+          Extra payment becomes shop credit.
+        */
+
+        if (remainingPayment > 0) {
+
+          borrower.shopCredit =
+            Number(borrower.shopCredit || 0)
+            + remainingPayment;
+
+        }
+
+
+        saveBorrowers(borrowers);
+
+
+        document.getElementById("paidModal")
+          .classList.add("hidden");
+
+
+        openProfile(selectedBorrowerId);
+
+        renderBorrowers();
+
+      });
+
+
+    /*
+      EDIT BORROWER
+    */
+
+    document.getElementById("editBorrowerBtn")
+      .addEventListener("click", () => {
+
+        const borrowers = loadBorrowers();
+
+        const borrower =
+          borrowers.find(b => b.id === selectedBorrowerId);
+
+        if (!borrower) return;
+
+
+        document.getElementById("profileModal")
+          .classList.add("hidden");
+
+
+        document.getElementById("nameInput").value =
+          borrower.name;
+
+        document.getElementById("phoneInput").value =
+          borrower.phone || "";
+
+        document.getElementById("addressInput").value =
+          borrower.address || "";
+
+
+        /*
+          Editing is intentionally limited to
+          borrower basic information.
+          Borrowing history is preserved.
+        */
+
+        const form =
+          document.getElementById("borrowerForm");
+
+
+        form.dataset.editing = borrower.id;
+
+
+        document.getElementById("borrowerModalTitle")
+          .textContent = "Edit Borrower";
+
+
+        document.getElementById("amountInput").required = false;
+
+        document.getElementById("dateInput").required = false;
+
+
+        document.getElementById("borrowerModal")
+          .classList.remove("hidden");
+
+      });
+
+
+    /*
+      HANDLE EDIT SAVE
+    */
+
+    document.getElementById("borrowerForm")
+      .addEventListener("submit", function (e) {
+
+        if (!this.dataset.editing) return;
+
+        e.preventDefault();
+
+
+        const id = this.dataset.editing;
+
+        const borrowers = loadBorrowers();
+
+        const borrower =
+          borrowers.find(b => b.id === id);
+
+        if (!borrower) return;
+
+
+        borrower.name =
+          document.getElementById("nameInput").value.trim();
+
+        borrower.phone =
+          document.getElementById("phoneInput").value.trim();
+
+        borrower.address =
+          document.getElementById("addressInput").value.trim();
+
+
+        saveBorrowers(borrowers);
+
+
+        delete this.dataset.editing;
+
+
+        document.getElementById("amountInput").required = true;
+
+        document.getElementById("dateInput").required = true;
+
+
+        document.getElementById("borrowerModalTitle")
+          .textContent = "Add Borrower";
+
+
+        document.getElementById("borrowerModal")
+          .classList.add("hidden");
+
+
+        renderBorrowers();
+
+        openProfile(id);
+
+      });
+
+
+    /*
+      DELETE BORROWER
+    */
+
+    document.getElementById("deleteBorrowerBtn")
+      .addEventListener("click", () => {
+
+        if (!confirm("Delete this borrower permanently?"))
+          return;
+
+
+        let borrowers = loadBorrowers();
+
+        borrowers =
+          borrowers.filter(b =>
+            b.id !== selectedBorrowerId);
+
+
+        saveBorrowers(borrowers);
+
+
+        document.getElementById("profileModal")
+          .classList.add("hidden");
+
+
+        renderBorrowers();
+
+      });
+
+
+    /*
+      CLOSE PROFILE
+    */
+
+    document.getElementById("closeProfile")
+      .addEventListener("click", () => {
+
+        document.getElementById("profileModal")
+          .classList.add("hidden");
+
+      });
+
+
+    /*
+      INITIALISE
+    */
+
+    renderBorrowers();
+
   </script>
+
 </body>
+
+</html>
+```
