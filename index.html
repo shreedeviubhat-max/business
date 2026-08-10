@@ -5,278 +5,816 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Borrower Ledger</title>
+
+  <title>Credit & Debt Ledger</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: "hsl(222, 81%, 54%)",
-            secondary: "hsl(210, 40%, 96%)",
-            surface: "hsl(210, 20%, 12%)"
-          }
-        }
-      }
-    };
-  </script>
+  <!-- OCR for photos -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+  <!-- PDF text extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module"></script>
 
   <style>
-    .borrower-card {
-      background: rgba(255, 255, 255, 0.88);
-      border: 2px solid rgba(0, 0, 0, 0.08);
-      border-radius: 4px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    * {
+      box-sizing: border-box;
     }
 
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: scale(.97);
-      }
-
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
+    body {
+      font-family: Inter, sans-serif;
     }
 
-    .animate-fade-in {
-      animation: fadeIn .2s ease-out;
+    .section-card {
+      background: rgba(255, 255, 255, .94);
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
+    }
+
+    .profile-card {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: .2s;
+    }
+
+    .profile-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, .12);
+    }
+
+    .modal {
+      background: rgba(0, 0, 0, .55);
+    }
+
+    .history-box {
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 14px;
+      background: #fff;
+    }
+
+    .bill-box {
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 14px;
+      background: #fafafa;
+    }
+
+    input,
+    textarea {
+      outline: none;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, .15);
     }
   </style>
 </head>
 
-<body class="min-h-screen bg-gradient-to-br from-primary to-secondary font-sans text-gray-800">
+
+<body class="min-h-screen bg-gradient-to-br from-blue-700 via-blue-500 to-slate-200">
 
   <!-- HEADER -->
-  <header class="p-4 flex items-center justify-between">
-    <h1 class="text-2xl font-bold text-white">Borrower Ledger</h1>
+  <header class="p-4 flex justify-between items-center">
+    <h1 class="text-2xl md:text-3xl font-bold text-white">
+      Credit & Debt Ledger
+    </h1>
 
-    <button id="addBorrowerBtn" class="bg-white px-4 py-2 rounded-full font-medium shadow-md hover:bg-gray-100">
+    <button id="addBorrowerBtn" class="bg-white text-blue-700 font-semibold px-4 py-2 rounded-full shadow">
       + Add Borrower
     </button>
   </header>
 
-  <!-- BORROWER LIST -->
-  <main class="p-4">
-    <section id="borrowerGrid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+  <!-- MAIN -->
+  <main class="p-4 max-w-7xl mx-auto space-y-8">
+
+    <!-- ================= BORROWERS ================= -->
+    <section class="section-card">
+
+      <div class="flex justify-between items-center mb-5">
+        <div>
+          <h2 class="text-2xl font-bold text-blue-700">
+            Borrowers
+          </h2>
+
+          <p class="text-gray-500 text-sm">
+            People who owe you money
+          </p>
+        </div>
+
+        <button id="addBorrowerBtn2" class="bg-blue-600 text-white px-4 py-2 rounded-lg">
+          + Add
+        </button>
+      </div>
+
+      <div id="borrowerGrid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      </div>
+
     </section>
+
+
+    <!-- ================= MY DEBT ================= -->
+    <section class="section-card">
+
+      <div class="flex justify-between items-center mb-5">
+
+        <div>
+          <h2 class="text-2xl font-bold text-purple-700">
+            My Debt
+          </h2>
+
+          <p class="text-gray-500 text-sm">
+            Owners / suppliers whom you have to pay
+          </p>
+        </div>
+
+        <button id="addOwnerBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg">
+          + Add Owner
+        </button>
+
+      </div>
+
+      <div id="ownerGrid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      </div>
+
+    </section>
+
   </main>
 
 
-  <!-- ADD BORROWER MODAL -->
-  <div id="borrowerModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+  <!-- =====================================================
+       BORROWER ADD / EDIT MODAL
+  ====================================================== -->
 
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 animate-fade-in">
+  <div id="borrowerModal" class="modal fixed inset-0 hidden items-center justify-center z-50 p-4">
 
-      <h2 id="borrowerModalTitle" class="text-xl font-semibold mb-4">
-        Add Borrower
-      </h2>
+    <div class="bg-white rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+
+      <div class="flex justify-between items-center mb-4">
+
+        <h2 id="borrowerModalTitle" class="text-xl font-bold">
+          Add Borrower
+        </h2>
+
+        <button id="closeBorrowerModal" class="text-gray-500 text-xl">
+          ✕
+        </button>
+
+      </div>
+
 
       <form id="borrowerForm" class="space-y-4">
 
-        <div>
-          <label class="block font-medium">Name</label>
-          <input id="nameInput" type="text" required class="w-full border rounded-md px-3 py-2">
-        </div>
+        <input type="hidden" id="borrowerEditId">
+
 
         <div>
-          <label class="block font-medium">Phone</label>
-          <input id="phoneInput" type="tel" class="w-full border rounded-md px-3 py-2">
+          <label class="font-medium">Name</label>
+
+          <input id="borrowerName" required class="w-full border rounded-lg px-3 py-2">
         </div>
 
-        <div>
-          <label class="block font-medium">Address</label>
-          <textarea id="addressInput" class="w-full border rounded-md px-3 py-2"></textarea>
-        </div>
 
         <div>
-          <label class="block font-medium">First Amount Taken (₹)</label>
-          <input id="amountInput" type="number" min="0" step="0.01" required class="w-full border rounded-md px-3 py-2">
+          <label class="font-medium">Phone</label>
+
+          <input id="borrowerPhone" class="w-full border rounded-lg px-3 py-2">
         </div>
 
-        <div>
-          <label class="block font-medium">Date</label>
-          <input id="dateInput" type="date" required class="w-full border rounded-md px-3 py-2">
-        </div>
 
         <div>
-          <label class="block font-medium">Photo (optional)</label>
-          <input id="photoInput" type="file" accept="image/*" class="w-full">
+          <label class="font-medium">Address</label>
+
+          <textarea id="borrowerAddress" class="w-full border rounded-lg px-3 py-2">
+          </textarea>
         </div>
+
+
+        <div>
+          <label class="font-medium">
+            First Amount Taken (₹)
+          </label>
+
+          <input id="borrowerAmount" type="number" min="0" step="0.01" required
+            class="w-full border rounded-lg px-3 py-2">
+        </div>
+
+
+        <div>
+          <label class="font-medium">
+            Date
+          </label>
+
+          <input id="borrowerDate" type="date" required class="w-full border rounded-lg px-3 py-2">
+        </div>
+
 
         <div class="flex justify-end gap-2">
-          <button type="button" id="cancelBorrowerBtn" class="px-4 py-2 rounded-md bg-gray-200">
+
+          <button type="button" id="cancelBorrower" class="px-4 py-2 bg-gray-200 rounded-lg">
             Cancel
           </button>
 
-          <button type="submit" class="px-4 py-2 rounded-md bg-primary text-white">
+          <button class="px-4 py-2 bg-blue-600 text-white rounded-lg">
             Save
           </button>
+
         </div>
 
       </form>
+
     </div>
   </div>
 
 
-  <!-- BORROWER PROFILE -->
-  <div id="profileModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+  <!-- =====================================================
+       BORROWER PROFILE
+  ====================================================== -->
 
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto animate-fade-in">
+  <div id="borrowerProfileModal" class="modal fixed inset-0 hidden items-center justify-center z-50 p-4">
 
-      <button id="closeProfile" class="float-right text-gray-500 text-xl">
-        ✕
-      </button>
+    <div class="bg-white rounded-xl w-full max-w-3xl p-6 max-h-[92vh] overflow-y-auto">
 
-      <h2 id="profileName" class="text-2xl font-bold mb-4">
-      </h2>
+      <div class="flex justify-between items-start">
 
-      <div class="grid sm:grid-cols-2 gap-3 mb-5">
+        <div>
+          <h2 id="borrowerProfileName" class="text-2xl font-bold">
+          </h2>
 
-        <div class="border-2 p-3 rounded">
+          <p id="borrowerProfileStatus" class="font-bold">
+          </p>
+        </div>
+
+        <button id="closeBorrowerProfile" class="text-gray-500 text-xl">
+          ✕
+        </button>
+
+      </div>
+
+
+      <!-- DETAILS -->
+      <div class="grid sm:grid-cols-2 gap-3 mt-5">
+
+        <div class="border-2 rounded-lg p-3">
           <b>Phone</b>
-          <p id="profilePhone"></p>
+          <p id="borrowerProfilePhone"></p>
         </div>
 
-        <div class="border-2 p-3 rounded">
+        <div class="border-2 rounded-lg p-3">
           <b>Address</b>
-          <p id="profileAddress"></p>
+          <p id="borrowerProfileAddress"></p>
         </div>
 
-        <div class="border-2 p-3 rounded">
+        <div class="border-2 rounded-lg p-3">
           <b>Total Borrowed</b>
-          <p id="profileTotalBorrowed"></p>
+          <p id="borrowerTotalBorrowed"></p>
         </div>
 
-        <div class="border-2 p-3 rounded">
-          <b>Total Paid</b>
-          <p id="profileTotalPaid"></p>
+        <div class="border-2 rounded-lg p-3">
+          <b>Total Returned</b>
+          <p id="borrowerTotalPaid"></p>
         </div>
 
-        <div class="border-2 p-3 rounded">
-          <b>Remaining</b>
-          <p id="profileRemaining"></p>
+        <div class="border-2 rounded-lg p-3">
+          <b>Current Amount</b>
+          <p id="borrowerCurrentAmount"></p>
         </div>
 
       </div>
 
+
       <!-- BORROWING HISTORY -->
-      <h3 class="text-xl font-semibold mb-3">
+      <h3 class="text-xl font-bold mt-7 mb-3">
         Borrowing History
       </h3>
 
-      <div id="borrowingList" class="space-y-3 mb-6"></div>
+      <div id="borrowerHistory" class="space-y-3">
+      </div>
 
-      <!-- ACTION BUTTONS -->
-      <div class="flex flex-wrap gap-2">
 
-        <button id="addAmountBtn" class="px-4 py-2 bg-primary text-white rounded-md">
+      <!-- BUTTONS -->
+      <div class="flex flex-wrap gap-2 mt-6">
+
+        <button id="borrowerAddAmountBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg">
           + Add
         </button>
 
-        <button id="paidBtn" class="px-4 py-2 bg-green-600 text-white rounded-md">
+        <button id="borrowerPaidBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg">
           Paid
         </button>
 
-        <button id="editBorrowerBtn" class="px-4 py-2 bg-gray-600 text-white rounded-md">
+        <button id="borrowerEditBtn" class="bg-gray-600 text-white px-4 py-2 rounded-lg">
           Edit
         </button>
 
-        <button id="deleteBorrowerBtn" class="px-4 py-2 bg-red-600 text-white rounded-md">
+        <button id="borrowerDeleteBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg">
           Delete
         </button>
 
       </div>
 
-      <p id="borrowMessage" class="mt-5 font-semibold text-lg">
+
+      <p id="borrowerExtraMessage" class="mt-5 font-bold text-lg">
       </p>
 
     </div>
   </div>
 
 
-  <!-- ADD AMOUNT MODAL -->
-  <div id="amountModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+  <!-- =====================================================
+       BORROWER ADD AMOUNT MODAL
+  ====================================================== -->
 
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+  <div id="borrowerAmountModal" class="modal fixed inset-0 hidden items-center justify-center z-[60] p-4">
 
-      <h2 class="text-xl font-semibold mb-4">
+    <div class="bg-white rounded-xl w-full max-w-md p-6">
+
+      <h2 class="text-xl font-bold mb-4">
         Add Borrowing
       </h2>
 
-      <form id="amountForm" class="space-y-4">
+      <form id="borrowerAmountForm" class="space-y-4">
 
         <div>
-          <label class="block font-medium">Amount (₹)</label>
-          <input id="newAmountInput" type="number" min="0" step="0.01" required
-            class="w-full border rounded-md px-3 py-2">
+
+          <label class="font-medium">
+            Amount Taken (₹)
+          </label>
+
+          <input id="newBorrowAmount" type="number" min="0" step="0.01" required
+            class="w-full border rounded-lg px-3 py-2">
+
         </div>
 
+
         <div>
-          <label class="block font-medium">Date</label>
-          <input id="newDateInput" type="date" required class="w-full border rounded-md px-3 py-2">
+
+          <label class="font-medium">
+            Date
+          </label>
+
+          <input id="newBorrowDate" type="date" required class="w-full border rounded-lg px-3 py-2">
+
         </div>
+
 
         <div class="flex justify-end gap-2">
-          <button type="button" id="cancelAmountBtn" class="px-4 py-2 bg-gray-200 rounded-md">
+
+          <button type="button" id="cancelBorrowAmount" class="px-4 py-2 bg-gray-200 rounded-lg">
             Cancel
           </button>
 
-          <button type="submit" class="px-4 py-2 bg-primary text-white rounded-md">
+          <button class="px-4 py-2 bg-blue-600 text-white rounded-lg">
             Add
           </button>
+
         </div>
 
       </form>
+
     </div>
   </div>
 
 
-  <!-- PAID MODAL -->
-  <div id="paidModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+  <!-- =====================================================
+       BORROWER PAID MODAL
+  ====================================================== -->
 
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+  <div id="borrowerPaidModal" class="modal fixed inset-0 hidden items-center justify-center z-[60] p-4">
 
-      <h2 class="text-xl font-semibold mb-4">
-        Money Returned
+    <div class="bg-white rounded-xl w-full max-w-md p-6">
+
+      <h2 class="text-xl font-bold mb-4">
+        Return Money
       </h2>
 
-      <form id="paidForm">
+      <form id="borrowerPaidForm" class="space-y-4">
 
-        <label class="block font-medium mb-1">
-          How much money did he return?
-        </label>
+        <div>
 
-        <input id="paidInput" type="number" min="0" step="0.01" required
-          class="w-full border rounded-md px-3 py-2 mb-4">
+          <label class="font-medium">
+            How much money did he return?
+          </label>
+
+          <input id="borrowerPaidAmount" type="number" min="0" step="0.01" required
+            class="w-full border rounded-lg px-3 py-2">
+
+        </div>
+
+
+        <div>
+
+          <label class="font-medium">
+            Paid Date
+          </label>
+
+          <input id="borrowerPaidDate" type="date" required class="w-full border rounded-lg px-3 py-2">
+
+        </div>
+
 
         <div class="flex justify-end gap-2">
 
-          <button type="button" id="cancelPaidBtn" class="px-4 py-2 bg-gray-200 rounded-md">
+          <button type="button" id="cancelBorrowerPaid" class="px-4 py-2 bg-gray-200 rounded-lg">
             Cancel
           </button>
 
-          <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md">
-            Submit
+          <button class="px-4 py-2 bg-green-600 text-white rounded-lg">
+            Save Payment
           </button>
 
         </div>
 
       </form>
+
     </div>
   </div>
+
+
+  <!-- =====================================================
+       OWNER ADD / EDIT MODAL
+  ====================================================== -->
+
+  <div id="ownerModal" class="modal fixed inset-0 hidden items-center justify-center z-50 p-4">
+
+    <div class="bg-white rounded-xl w-full max-w-md p-6">
+
+      <div class="flex justify-between mb-4">
+
+        <h2 id="ownerModalTitle" class="text-xl font-bold">
+          Add Owner / Supplier
+        </h2>
+
+        <button id="closeOwnerModal">
+          ✕
+        </button>
+
+      </div>
+
+
+      <form id="ownerForm" class="space-y-4">
+
+        <input type="hidden" id="ownerEditId">
+
+
+        <div>
+
+          <label class="font-medium">
+            Owner / Supplier Name
+          </label>
+
+          <input id="ownerName" required class="w-full border rounded-lg px-3 py-2">
+
+        </div>
+
+
+        <div>
+
+          <label class="font-medium">
+            Phone
+          </label>
+
+          <input id="ownerPhone" class="w-full border rounded-lg px-3 py-2">
+
+        </div>
+
+
+        <div>
+
+          <label class="font-medium">
+            Address
+          </label>
+
+          <textarea id="ownerAddress" class="w-full border rounded-lg px-3 py-2">
+          </textarea>
+
+        </div>
+
+
+        <div>
+
+          <label class="font-medium">
+            Product(s) Supplied
+          </label>
+
+          <textarea id="ownerProducts" placeholder="Example: Rice, Sugar, Oil"
+            class="w-full border rounded-lg px-3 py-2">
+          </textarea>
+
+        </div>
+
+
+        <div class="flex justify-end gap-2">
+
+          <button type="button" id="cancelOwner" class="px-4 py-2 bg-gray-200 rounded-lg">
+            Cancel
+          </button>
+
+          <button class="px-4 py-2 bg-purple-600 text-white rounded-lg">
+            Save
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+
+  <!-- =====================================================
+       OWNER PROFILE
+  ====================================================== -->
+
+  <div id="ownerProfileModal" class="modal fixed inset-0 hidden items-center justify-center z-50 p-4">
+
+    <div class="bg-white rounded-xl w-full max-w-3xl p-6 max-h-[92vh] overflow-y-auto">
+
+      <div class="flex justify-between">
+
+        <div>
+
+          <h2 id="ownerProfileName" class="text-2xl font-bold">
+          </h2>
+
+          <p id="ownerProfileDebt" class="text-xl font-bold text-purple-700">
+          </p>
+
+        </div>
+
+        <button id="closeOwnerProfile">
+          ✕
+        </button>
+
+      </div>
+
+
+      <!-- OWNER DETAILS -->
+      <div class="grid sm:grid-cols-2 gap-3 mt-5">
+
+        <div class="border-2 rounded-lg p-3">
+          <b>Phone</b>
+          <p id="ownerProfilePhone"></p>
+        </div>
+
+        <div class="border-2 rounded-lg p-3">
+          <b>Address</b>
+          <p id="ownerProfileAddress"></p>
+        </div>
+
+        <div class="border-2 rounded-lg p-3">
+          <b>Products Supplied</b>
+          <p id="ownerProfileProducts"></p>
+        </div>
+
+        <div class="border-2 rounded-lg p-3">
+          <b>Total Bills</b>
+          <p id="ownerTotalBills"></p>
+        </div>
+
+        <div class="border-2 rounded-lg p-3">
+          <b>Total Paid</b>
+          <p id="ownerTotalPaid"></p>
+        </div>
+
+      </div>
+
+
+      <!-- BILLS -->
+      <h3 class="text-xl font-bold mt-7 mb-3">
+        Bills
+      </h3>
+
+      <div id="ownerBills" class="space-y-3">
+      </div>
+
+
+      <!-- PAYMENTS -->
+      <h3 class="text-xl font-bold mt-7 mb-3">
+        Payment History
+      </h3>
+
+      <div id="ownerPayments" class="space-y-3">
+      </div>
+
+
+      <!-- BUTTONS -->
+      <div class="flex flex-wrap gap-2 mt-6">
+
+        <button id="ownerAddBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg">
+          + Add
+        </button>
+
+        <button id="ownerPayBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg">
+          Pay
+        </button>
+
+        <button id="ownerEditBtn" class="bg-gray-600 text-white px-4 py-2 rounded-lg">
+          Edit
+        </button>
+
+        <button id="ownerDeleteBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg">
+          Delete
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- =====================================================
+       OWNER ADD BILL MODAL
+  ====================================================== -->
+
+  <div id="billModal" class="modal fixed inset-0 hidden items-center justify-center z-[60] p-4">
+
+    <div class="bg-white rounded-xl w-full max-w-lg p-6">
+
+      <h2 class="text-xl font-bold mb-4">
+        Add Bill
+      </h2>
+
+      <p class="text-sm text-gray-500 mb-4">
+        You can add a PDF, photo, or enter the details manually.
+      </p>
+
+
+      <form id="billForm" class="space-y-4">
+
+
+        <!-- PDF -->
+        <div>
+
+          <label class="font-medium">
+            PDF Bill
+          </label>
+
+          <input id="billPdf" type="file" accept="application/pdf" class="w-full border rounded-lg p-2">
+
+        </div>
+
+
+        <!-- PHOTO -->
+        <div>
+
+          <label class="font-medium">
+            Photo of Bill
+          </label>
+
+          <input id="billPhoto" type="file" accept="image/*" class="w-full border rounded-lg p-2">
+
+        </div>
+
+
+        <div>
+
+          <label class="font-medium">
+            Owner Name
+          </label>
+
+          <input id="billOwnerName" class="w-full border rounded-lg px-3 py-2">
+
+        </div>
+
+
+        <div>
+
+          <label class="font-medium">
+            Total Bill Amount (₹)
+          </label>
+
+          <input id="billAmount" type="number" min="0" step="0.01" class="w-full border rounded-lg px-3 py-2">
+
+        </div>
+
+
+        <div>
+
+          <label class="font-medium">
+            Bill Date
+          </label>
+
+          <input id="billDate" type="date" class="w-full border rounded-lg px-3 py-2">
+
+        </div>
+
+
+        <div>
+
+          <label class="font-medium">
+            Additional Text
+          </label>
+
+          <textarea id="billText" class="w-full border rounded-lg px-3 py-2">
+          </textarea>
+
+        </div>
+
+
+        <p id="ocrStatus" class="text-sm text-blue-600">
+        </p>
+
+
+        <div class="flex justify-end gap-2">
+
+          <button type="button" id="cancelBill" class="px-4 py-2 bg-gray-200 rounded-lg">
+            Cancel
+          </button>
+
+          <button class="px-4 py-2 bg-purple-600 text-white rounded-lg">
+            Save Bill
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+
+  <!-- =====================================================
+       OWNER PAYMENT MODAL
+  ====================================================== -->
+
+  <div id="ownerPayModal" class="modal fixed inset-0 hidden items-center justify-center z-[60] p-4">
+
+    <div class="bg-white rounded-xl w-full max-w-md p-6">
+
+      <h2 class="text-xl font-bold mb-4">
+        Pay Owner
+      </h2>
+
+
+      <form id="ownerPayForm" class="space-y-4">
+
+        <div>
+
+          <label class="font-medium">
+            Amount Paid (₹)
+          </label>
+
+          <input id="ownerPaidAmount" type="number" min="0" step="0.01" required
+            class="w-full border rounded-lg px-3 py-2">
+
+        </div>
+
+
+        <div>
+
+          <label class="font-medium">
+            Paid Date
+          </label>
+
+          <input id="ownerPaidDate" type="date" required class="w-full border rounded-lg px-3 py-2">
+
+        </div>
+
+
+        <div class="flex justify-end gap-2">
+
+          <button type="button" id="cancelOwnerPay" class="px-4 py-2 bg-gray-200 rounded-lg">
+            Cancel
+          </button>
+
+          <button class="px-4 py-2 bg-green-600 text-white rounded-lg">
+            Save Payment
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
 
 
   <script>
 
-    const STORAGE_KEY = "borrowerLedger";
+    /* ======================================================
+       STORAGE
+    ====================================================== */
+
+    const BORROWER_KEY = "borrowers_v3";
+    const OWNER_KEY = "owners_v3";
+
 
     let selectedBorrowerId = null;
+    let selectedOwnerId = null;
+
+
+    const $ = id => document.getElementById(id);
 
 
     function generateId() {
@@ -284,219 +822,471 @@
     }
 
 
-    function loadBorrowers() {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    }
-
-
-    function saveBorrowers(data) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
-
-
     function money(value) {
-      return Number(value).toLocaleString("en-IN", {
-        style: "currency",
-        currency: "INR"
-      });
+
+      return Number(value || 0).toLocaleString(
+        "en-IN",
+        {
+          style: "currency",
+          currency: "INR"
+        }
+      );
+
     }
 
 
     function today() {
-      return new Date().toISOString().split("T")[0];
+
+      return new Date()
+        .toISOString()
+        .split("T")[0];
+
     }
 
 
-    /*
-      Calculate totals.
-  
-      Each borrowing entry contains:
-      amount
-      date
-      paid
-    */
+    function loadBorrowers() {
 
-    function getTotals(borrower) {
+      return JSON.parse(
+        localStorage.getItem(BORROWER_KEY) || "[]"
+      );
 
-      let totalBorrowed = 0;
-      let totalPaid = 0;
+    }
+
+
+    function saveBorrowers(data) {
+
+      localStorage.setItem(
+        BORROWER_KEY,
+        JSON.stringify(data)
+      );
+
+    }
+
+
+    function loadOwners() {
+
+      return JSON.parse(
+        localStorage.getItem(OWNER_KEY) || "[]"
+      );
+
+    }
+
+
+    function saveOwners(data) {
+
+      localStorage.setItem(
+        OWNER_KEY,
+        JSON.stringify(data)
+      );
+
+    }
+
+
+    function showModal(element) {
+
+      element.classList.remove("hidden");
+      element.classList.add("flex");
+
+    }
+
+
+    function hideModal(element) {
+
+      element.classList.add("hidden");
+      element.classList.remove("flex");
+
+    }
+
+
+
+    /* ======================================================
+       BORROWER CALCULATIONS
+    ====================================================== */
+
+    function borrowerTotals(borrower) {
+
+      let borrowed = 0;
+      let paid = 0;
 
       borrower.borrowings.forEach(item => {
-        totalBorrowed += Number(item.amount);
-        totalPaid += Number(item.paid || 0);
+
+        borrowed += Number(item.amount || 0);
+        paid += Number(item.paid || 0);
+
       });
 
       return {
-        totalBorrowed,
-        totalPaid,
-        remaining: totalBorrowed - totalPaid
+
+        borrowed,
+
+        paid,
+
+        remaining: borrowed - paid
+
       };
+
     }
 
 
-    /*
-      MAIN BORROWER CARDS
-    */
+
+    /* ======================================================
+       RENDER BORROWERS
+    ====================================================== */
 
     function renderBorrowers() {
 
       const borrowers = loadBorrowers();
-      const grid = document.getElementById("borrowerGrid");
+
+      const grid = $("borrowerGrid");
 
       grid.innerHTML = "";
 
-      if (borrowers.length === 0) {
+
+      if (!borrowers.length) {
 
         grid.innerHTML = `
-        <p class="col-span-full text-center text-white text-lg">
-          No borrowers yet. Click "+ Add Borrower" to start.
+        <p class="text-gray-500 col-span-full text-center">
+          No borrowers added yet.
         </p>
       `;
 
         return;
+
       }
 
 
       borrowers.forEach(borrower => {
 
-        const totals = getTotals(borrower);
-
-        const card = document.createElement("div");
-
-        card.className =
-          "borrower-card p-5 cursor-pointer hover:scale-[1.02] transition";
+        const totals = borrowerTotals(borrower);
 
 
-        let statusText = "";
+        let status;
+
 
         if (totals.remaining === 0) {
 
-          statusText =
-            `<span class="text-green-600 font-bold">Completed</span>`;
-
-        } else if (totals.remaining > 0) {
-
-          statusText =
-            `<span class="text-red-600 font-bold">
-            ${money(totals.remaining)} remaining
-          </span>`;
+          status = `
+          <span class="text-green-600 font-bold">
+            ✓ Completed
+          </span>
+        `;
 
         } else {
 
-          statusText =
-            `<span class="text-blue-600 font-bold">
-            Can borrow ${money(Math.abs(totals.remaining))}
-          </span>`;
+          status = `
+          <span class="text-red-600 font-bold">
+            ${money(totals.remaining)} remaining
+          </span>
+        `;
+
         }
+
+
+        const card = document.createElement("div");
+
+        card.className = "profile-card";
 
 
         card.innerHTML = `
 
-        <div class="flex items-center gap-4">
+        <h3 class="font-bold text-lg">
+          ${escapeHtml(borrower.name)}
+        </h3>
 
-          <img
-            src="${borrower.photo ||
-          `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(borrower.name)}`}"
-            class="w-16 h-16 rounded-full border-2 border-primary object-cover">
+        <p class="mt-1">
+          ${status}
+        </p>
 
-          <div class="flex-1">
+        <p class="text-sm text-gray-500 mt-2">
+          ${escapeHtml(borrower.phone || "")}
+        </p>
 
-            <h3 class="font-bold text-lg">
-              ${borrower.name}
-            </h3>
-
-            <p class="font-semibold">
-              ${statusText}
-            </p>
-
-          </div>
-
-        </div>
       `;
 
 
-        card.addEventListener("click", () => {
-          openProfile(borrower.id);
-        });
+        card.onclick = () =>
+          openBorrowerProfile(borrower.id);
 
 
         grid.appendChild(card);
 
       });
+
     }
 
 
-    /*
-      ADD BORROWER
-    */
 
-    document.getElementById("addBorrowerBtn")
-      .addEventListener("click", () => {
+    /* ======================================================
+       BORROWER PROFILE
+    ====================================================== */
 
-        document.getElementById("borrowerModal")
-          .classList.remove("hidden");
+    function openBorrowerProfile(id) {
 
-        document.getElementById("borrowerForm").reset();
+      selectedBorrowerId = id;
 
-        document.getElementById("dateInput").value = today();
+      const borrowers = loadBorrowers();
 
-      });
+      const borrower =
+        borrowers.find(b => b.id === id);
 
 
-    document.getElementById("cancelBorrowerBtn")
-      .addEventListener("click", () => {
-
-        document.getElementById("borrowerModal")
-          .classList.add("hidden");
-
-      });
+      if (!borrower) return;
 
 
-    document.getElementById("borrowerForm")
-      .addEventListener("submit", async function (e) {
-
-        e.preventDefault();
+      const totals =
+        borrowerTotals(borrower);
 
 
-        const name =
-          document.getElementById("nameInput").value.trim();
-
-        const phone =
-          document.getElementById("phoneInput").value.trim();
-
-        const address =
-          document.getElementById("addressInput").value.trim();
-
-        const amount =
-          Number(document.getElementById("amountInput").value);
-
-        const date =
-          document.getElementById("dateInput").value;
-
-        const photoInput =
-          document.getElementById("photoInput");
+      $("borrowerProfileName")
+        .textContent = borrower.name;
 
 
-        let photo = null;
+      $("borrowerProfilePhone")
+        .textContent = borrower.phone || "—";
 
 
-        if (photoInput.files[0]) {
+      $("borrowerProfileAddress")
+        .textContent = borrower.address || "—";
 
-          photo = await new Promise(resolve => {
 
-            const reader = new FileReader();
+      $("borrowerTotalBorrowed")
+        .textContent = money(totals.borrowed);
 
-            reader.onload = () => resolve(reader.result);
 
-            reader.readAsDataURL(photoInput.files[0]);
+      $("borrowerTotalPaid")
+        .textContent = money(totals.paid);
 
-          });
+
+      $("borrowerCurrentAmount")
+        .textContent =
+        totals.remaining > 0
+          ? money(totals.remaining)
+          : "₹0";
+
+
+      if (totals.remaining === 0) {
+
+        $("borrowerProfileStatus").textContent =
+          "✓ Completed";
+
+        $("borrowerProfileStatus").className =
+          "font-bold text-green-600";
+
+        $("borrowerExtraMessage").textContent =
+          "Completed";
+
+        $("borrowerExtraMessage").className =
+          "mt-5 font-bold text-lg text-green-600";
+
+      } else {
+
+        $("borrowerProfileStatus").textContent =
+          money(totals.remaining) + " remaining";
+
+        $("borrowerProfileStatus").className =
+          "font-bold text-red-600";
+
+        $("borrowerExtraMessage").textContent =
+          `Remaining amount: ${money(totals.remaining)}`;
+
+        $("borrowerExtraMessage").className =
+          "mt-5 font-bold text-lg text-red-600";
+
+      }
+
+
+      renderBorrowerHistory(borrower);
+
+      showModal($("borrowerProfileModal"));
+
+    }
+
+
+
+    /* ======================================================
+       BORROWER HISTORY
+    ====================================================== */
+
+    function renderBorrowerHistory(borrower) {
+
+      const list = $("borrowerHistory");
+
+      list.innerHTML = "";
+
+
+      borrower.borrowings.forEach(item => {
+
+        const amount = Number(item.amount || 0);
+
+        const paid = Number(item.paid || 0);
+
+        const remaining = amount - paid;
+
+
+        let status;
+
+
+        if (remaining <= 0) {
+
+          status = `
+          <span class="text-green-600 font-bold">
+            ✓ Completed
+          </span>
+        `;
+
+        } else if (paid > 0) {
+
+          status = `
+          <span class="text-orange-600 font-bold">
+            ${money(remaining)} Remaining
+          </span>
+        `;
+
+        } else {
+
+          status = `
+          <span class="text-red-600 font-bold">
+            Pending
+          </span>
+        `;
 
         }
 
 
-        const borrowers = loadBorrowers();
+        const box = document.createElement("div");
 
+        box.className = "history-box";
+
+
+        box.innerHTML = `
+
+        <div class="flex justify-between gap-4">
+
+          <div>
+
+            <p class="font-bold text-lg">
+              ${money(amount)}
+            </p>
+
+            <p class="text-sm text-gray-500">
+              Taken:
+              ${formatDate(item.date)}
+            </p>
+
+            <p class="text-sm">
+              Returned:
+              ${money(paid)}
+            </p>
+
+            ${item.paidDate
+            ?
+            `
+              <p class="text-sm text-green-600">
+                Paid Date:
+                ${formatDate(item.paidDate)}
+              </p>
+              `
+            :
+            ""
+          }
+
+          </div>
+
+          <div class="text-right">
+            ${status}
+          </div>
+
+        </div>
+
+      `;
+
+
+        list.appendChild(box);
+
+      });
+
+    }
+
+
+
+    /* ======================================================
+       BORROWER ADD
+    ====================================================== */
+
+    function openBorrowerAdd() {
+
+      $("borrowerForm").reset();
+
+      $("borrowerEditId").value = "";
+
+      $("borrowerModalTitle").textContent =
+        "Add Borrower";
+
+      $("borrowerDate").value = today();
+
+      showModal($("borrowerModal"));
+
+    }
+
+
+    $("addBorrowerBtn").onclick =
+      openBorrowerAdd;
+
+
+    $("addBorrowerBtn2").onclick =
+      openBorrowerAdd;
+
+
+    $("closeBorrowerModal").onclick = () =>
+      hideModal($("borrowerModal"));
+
+
+    $("cancelBorrower").onclick = () =>
+      hideModal($("borrowerModal"));
+
+
+
+    $("borrowerForm").onsubmit = function (e) {
+
+      e.preventDefault();
+
+
+      const name =
+        $("borrowerName").value.trim();
+
+      const phone =
+        $("borrowerPhone").value.trim();
+
+      const address =
+        $("borrowerAddress").value.trim();
+
+      const amount =
+        Number($("borrowerAmount").value);
+
+      const date =
+        $("borrowerDate").value;
+
+
+      const borrowers = loadBorrowers();
+
+      const editId =
+        $("borrowerEditId").value;
+
+
+      if (editId) {
+
+        const borrower =
+          borrowers.find(b => b.id === editId);
+
+        if (borrower) {
+
+          borrower.name = name;
+          borrower.phone = phone;
+          borrower.address = address;
+
+        }
+
+      } else {
 
         borrowers.push({
 
@@ -508,588 +1298,1629 @@
 
           address,
 
-          photo,
-
           borrowings: [
 
             {
               id: generateId(),
               amount,
               date,
-              paid: 0
+              paid: 0,
+              paidDate: null
             }
 
           ]
 
         });
 
-
-        saveBorrowers(borrowers);
-
-        document.getElementById("borrowerModal")
-          .classList.add("hidden");
-
-        renderBorrowers();
-
-      });
+      }
 
 
-    /*
-      OPEN PROFILE
-    */
+      saveBorrowers(borrowers);
 
-    function openProfile(id) {
+      hideModal($("borrowerModal"));
 
-      selectedBorrowerId = id;
+      renderBorrowers();
+
+    };
+
+
+
+    /* ======================================================
+       BORROWER ADD AMOUNT
+    ====================================================== */
+
+    $("borrowerAddAmountBtn").onclick = () => {
+
+      $("borrowerAmountForm").reset();
+
+      $("newBorrowDate").value = today();
+
+      showModal($("borrowerAmountModal"));
+
+    };
+
+
+    $("cancelBorrowAmount").onclick = () =>
+      hideModal($("borrowerAmountModal"));
+
+
+    $("borrowerAmountForm").onsubmit = function (e) {
+
+      e.preventDefault();
+
+
+      const amount =
+        Number($("newBorrowAmount").value);
+
+      const date =
+        $("newBorrowDate").value;
+
 
       const borrowers = loadBorrowers();
 
       const borrower =
-        borrowers.find(b => b.id === id);
+        borrowers.find(b =>
+          b.id === selectedBorrowerId
+        );
+
 
       if (!borrower) return;
 
 
-      const totals = getTotals(borrower);
+      borrower.borrowings.push({
+
+        id: generateId(),
+
+        amount,
+
+        date,
+
+        paid: 0,
+
+        paidDate: null
+
+      });
 
 
-      document.getElementById("profileName")
-        .textContent = borrower.name;
+      saveBorrowers(borrowers);
 
 
-      document.getElementById("profilePhone")
-        .textContent = borrower.phone || "—";
+      hideModal($("borrowerAmountModal"));
+
+      renderBorrowers();
+
+      openBorrowerProfile(selectedBorrowerId);
+
+    };
 
 
-      document.getElementById("profileAddress")
-        .textContent = borrower.address || "—";
+
+    /* ======================================================
+       BORROWER PAYMENT
+    ====================================================== */
+
+    $("borrowerPaidBtn").onclick = () => {
+
+      const borrowers = loadBorrowers();
+
+      const borrower =
+        borrowers.find(b =>
+          b.id === selectedBorrowerId
+        );
 
 
-      document.getElementById("profileTotalBorrowed")
-        .textContent = money(totals.totalBorrowed);
+      if (!borrower) return;
 
 
-      document.getElementById("profileTotalPaid")
-        .textContent = money(totals.totalPaid);
+      const totals =
+        borrowerTotals(borrower);
 
 
-      document.getElementById("profileRemaining")
-        .textContent =
-        totals.remaining > 0
-          ? money(totals.remaining)
-          : "₹0";
+      if (totals.remaining <= 0) {
 
+        alert("This borrower has no remaining debt.");
 
-      renderBorrowingHistory(borrower);
+        return;
 
-
-      /*
-        Display special message
-      */
-
-      const message =
-        document.getElementById("borrowMessage");
-
-
-      if (totals.remaining === 0) {
-
-        message.textContent = "Completed";
-        message.className =
-          "mt-5 font-semibold text-lg text-green-600";
-
-      } else if (totals.remaining < 0) {
-
-        message.textContent =
-          `He can borrow ${money(Math.abs(totals.remaining))}
-         amount of product in your shop.`;
-
-        message.className =
-          "mt-5 font-semibold text-lg text-blue-600";
-
-      } else {
-
-        message.textContent =
-          `Remaining amount: ${money(totals.remaining)}`;
-
-        message.className =
-          "mt-5 font-semibold text-lg text-red-600";
       }
 
 
-      document.getElementById("profileModal")
-        .classList.remove("hidden");
+      $("borrowerPaidAmount").value = "";
+
+      $("borrowerPaidDate").value = today();
+
+      showModal($("borrowerPaidModal"));
+
+    };
+
+
+    $("cancelBorrowerPaid").onclick = () =>
+      hideModal($("borrowerPaidModal"));
+
+
+    $("borrowerPaidForm").onsubmit = function (e) {
+
+      e.preventDefault();
+
+
+      let payment =
+        Number($("borrowerPaidAmount").value);
+
+      const paidDate =
+        $("borrowerPaidDate").value;
+
+
+      if (payment <= 0) return;
+
+
+      const borrowers = loadBorrowers();
+
+      const borrower =
+        borrowers.find(b =>
+          b.id === selectedBorrowerId
+        );
+
+
+      if (!borrower) return;
+
+
+      /*
+        Match payment against the oldest
+        unpaid borrowing first.
+      */
+
+      for (const item of borrower.borrowings) {
+
+        if (payment <= 0) break;
+
+
+        const unpaid =
+          Number(item.amount) -
+          Number(item.paid || 0);
+
+
+        if (unpaid <= 0) continue;
+
+
+        const amountUsed =
+          Math.min(payment, unpaid);
+
+
+        item.paid =
+          Number(item.paid || 0)
+          + amountUsed;
+
+
+        item.paidDate = paidDate;
+
+
+        payment -= amountUsed;
+
+      }
+
+
+      /*
+        If borrower paid extra,
+        save it as shop credit.
+      */
+
+      if (payment > 0) {
+
+        borrower.shopCredit =
+          Number(borrower.shopCredit || 0)
+          + payment;
+
+      }
+
+
+      saveBorrowers(borrowers);
+
+      hideModal($("borrowerPaidModal"));
+
+      renderBorrowers();
+
+      openBorrowerProfile(selectedBorrowerId);
+
+    };
+
+
+
+    /* ======================================================
+       BORROWER EDIT
+    ====================================================== */
+
+    $("borrowerEditBtn").onclick = () => {
+
+      const borrowers = loadBorrowers();
+
+      const borrower =
+        borrowers.find(b =>
+          b.id === selectedBorrowerId
+        );
+
+
+      if (!borrower) return;
+
+
+      $("borrowerEditId").value =
+        borrower.id;
+
+      $("borrowerName").value =
+        borrower.name;
+
+      $("borrowerPhone").value =
+        borrower.phone || "";
+
+      $("borrowerAddress").value =
+        borrower.address || "";
+
+      $("borrowerAmount").value = "";
+
+      $("borrowerDate").value = today();
+
+
+      $("borrowerModalTitle").textContent =
+        "Edit Borrower";
+
+
+      hideModal($("borrowerProfileModal"));
+
+      showModal($("borrowerModal"));
+
+    };
+
+
+
+    /* ======================================================
+       BORROWER DELETE
+    ====================================================== */
+
+    $("borrowerDeleteBtn").onclick = () => {
+
+      if (!confirm(
+        "Delete this borrower permanently?"
+      )) return;
+
+
+      let borrowers = loadBorrowers();
+
+
+      borrowers =
+        borrowers.filter(b =>
+          b.id !== selectedBorrowerId
+        );
+
+
+      saveBorrowers(borrowers);
+
+      hideModal($("borrowerProfileModal"));
+
+      renderBorrowers();
+
+    };
+
+
+
+    $("closeBorrowerProfile").onclick = () =>
+      hideModal($("borrowerProfileModal"));
+
+
+
+    /* ======================================================
+       OWNER / SUPPLIER CALCULATIONS
+    ====================================================== */
+
+    function ownerTotals(owner) {
+
+      let bills = 0;
+      let paid = 0;
+
+
+      owner.bills.forEach(bill => {
+
+        bills += Number(bill.amount || 0);
+
+        paid += Number(bill.paid || 0);
+
+      });
+
+
+      return {
+
+        bills,
+
+        paid,
+
+        remaining: bills - paid
+
+      };
+
     }
 
 
-    /*
-      BORROWING HISTORY
-    */
 
-    function renderBorrowingHistory(borrower) {
+    /* ======================================================
+       RENDER OWNERS
+    ====================================================== */
 
-      const list =
-        document.getElementById("borrowingList");
+    function renderOwners() {
 
-      list.innerHTML = "";
+      const owners = loadOwners();
+
+      const grid = $("ownerGrid");
+
+      grid.innerHTML = "";
 
 
-      borrower.borrowings.forEach((item, index) => {
+      if (!owners.length) {
+
+        grid.innerHTML = `
+        <p class="text-gray-500 col-span-full text-center">
+          No owners/suppliers added yet.
+        </p>
+      `;
+
+        return;
+
+      }
+
+
+      owners.forEach(owner => {
+
+        const totals =
+          ownerTotals(owner);
+
+
+        const card =
+          document.createElement("div");
+
+
+        card.className =
+          "profile-card border-purple-200";
+
+
+        let amountText;
+
+
+        if (totals.remaining === 0) {
+
+          amountText = `
+          <span class="text-green-600 font-bold">
+            ✓ Completed
+          </span>
+        `;
+
+        } else {
+
+          amountText = `
+          <span class="text-purple-700 font-bold">
+            ${money(totals.remaining)}
+          </span>
+        `;
+
+        }
+
+
+        card.innerHTML = `
+
+        <h3 class="font-bold text-lg">
+          ${escapeHtml(owner.name)}
+        </h3>
+
+        <p class="mt-1">
+          ${amountText}
+        </p>
+
+        <p class="text-sm text-gray-500 mt-2">
+          ${escapeHtml(owner.products || "")}
+        </p>
+
+      `;
+
+
+        card.onclick = () =>
+          openOwnerProfile(owner.id);
+
+
+        grid.appendChild(card);
+
+      });
+
+    }
+
+
+
+    /* ======================================================
+       ADD OWNER
+    ====================================================== */
+
+    $("addOwnerBtn").onclick = () => {
+
+      $("ownerForm").reset();
+
+      $("ownerEditId").value = "";
+
+      $("ownerModalTitle").textContent =
+        "Add Owner / Supplier";
+
+      showModal($("ownerModal"));
+
+    };
+
+
+    $("closeOwnerModal").onclick = () =>
+      hideModal($("ownerModal"));
+
+
+    $("cancelOwner").onclick = () =>
+      hideModal($("ownerModal"));
+
+
+    $("ownerForm").onsubmit = function (e) {
+
+      e.preventDefault();
+
+
+      const name =
+        $("ownerName").value.trim();
+
+      const phone =
+        $("ownerPhone").value.trim();
+
+      const address =
+        $("ownerAddress").value.trim();
+
+      const products =
+        $("ownerProducts").value.trim();
+
+
+      const owners = loadOwners();
+
+      const editId =
+        $("ownerEditId").value;
+
+
+      if (editId) {
+
+        const owner =
+          owners.find(o => o.id === editId);
+
+
+        if (owner) {
+
+          owner.name = name;
+          owner.phone = phone;
+          owner.address = address;
+          owner.products = products;
+
+        }
+
+      } else {
+
+        owners.push({
+
+          id: generateId(),
+
+          name,
+
+          phone,
+
+          address,
+
+          products,
+
+          bills: [],
+
+          payments: []
+
+        });
+
+      }
+
+
+      saveOwners(owners);
+
+      hideModal($("ownerModal"));
+
+      renderOwners();
+
+    };
+
+
+
+    /* ======================================================
+       OWNER PROFILE
+    ====================================================== */
+
+    function openOwnerProfile(id) {
+
+      selectedOwnerId = id;
+
+
+      const owners = loadOwners();
+
+      const owner =
+        owners.find(o => o.id === id);
+
+
+      if (!owner) return;
+
+
+      const totals =
+        ownerTotals(owner);
+
+
+      $("ownerProfileName")
+        .textContent = owner.name;
+
+
+      $("ownerProfileDebt")
+        .textContent =
+        totals.remaining === 0
+          ? "✓ Completed"
+          : money(totals.remaining) +
+          " remaining to pay";
+
+
+      $("ownerProfilePhone")
+        .textContent =
+        owner.phone || "—";
+
+
+      $("ownerProfileAddress")
+        .textContent =
+        owner.address || "—";
+
+
+      $("ownerProfileProducts")
+        .textContent =
+        owner.products || "—";
+
+
+      $("ownerTotalBills")
+        .textContent =
+        money(totals.bills);
+
+
+      $("ownerTotalPaid")
+        .textContent =
+        money(totals.paid);
+
+
+      renderOwnerBills(owner);
+
+      renderOwnerPayments(owner);
+
+
+      showModal($("ownerProfileModal"));
+
+    }
+
+
+
+    /* ======================================================
+       OWNER BILLS
+    ====================================================== */
+
+    function renderOwnerBills(owner) {
+
+      const container =
+        $("ownerBills");
+
+      container.innerHTML = "";
+
+
+      if (!owner.bills.length) {
+
+        container.innerHTML = `
+        <p class="text-gray-500">
+          No bills added.
+        </p>
+      `;
+
+        return;
+
+      }
+
+
+      owner.bills.forEach(bill => {
+
+        const amount =
+          Number(bill.amount || 0);
+
+        const paid =
+          Number(bill.paid || 0);
 
         const remaining =
-          Number(item.amount) - Number(item.paid || 0);
+          amount - paid;
 
 
-        let status = "";
+        let status;
 
 
         if (remaining <= 0) {
 
-          status =
-            `<span class="text-green-600 font-bold">
-            ✅ Completed
-          </span>`;
+          status = `
+          <span class="text-green-600 font-bold">
+            ✓ Completed
+          </span>
+        `;
 
-        } else if (item.paid > 0) {
+        } else if (paid > 0) {
 
-          status =
-            `<span class="text-orange-600 font-bold">
-            ${money(remaining)} remaining
-          </span>`;
+          status = `
+          <span class="text-orange-600 font-bold">
+            ${money(remaining)} Remaining
+          </span>
+        `;
 
         } else {
 
-          status =
-            `<span class="text-red-600 font-bold">
+          status = `
+          <span class="text-red-600 font-bold">
             Pending
-          </span>`;
+          </span>
+        `;
+
         }
 
 
-        const row = document.createElement("div");
-
-        row.className =
-          "border-2 rounded-lg p-4";
+        const box =
+          document.createElement("div");
 
 
-        row.innerHTML = `
+        box.className =
+          "bill-box";
 
-        <div class="flex justify-between items-center">
+
+        box.innerHTML = `
+
+        <div class="flex justify-between gap-4">
 
           <div>
 
             <p class="font-bold">
-              ${money(item.amount)}
+              ${escapeHtml(
+          bill.detectedOwnerName ||
+          owner.name
+        )}
+            </p>
+
+            <p>
+              Total Bill:
+              <b>${money(amount)}</b>
             </p>
 
             <p class="text-sm text-gray-500">
-              Date: ${new Date(item.date)
-            .toLocaleDateString("en-IN")}
+              Bill Date:
+              ${formatDate(bill.date)}
             </p>
 
-            ${item.paid > 0
+            <p class="text-sm">
+              Paid:
+              ${money(paid)}
+            </p>
+
+            ${bill.paidDate
             ?
-            `<p class="text-sm text-green-600">
-                Paid: ${money(item.paid)}
-              </p>`
-            : ""
+            `
+              <p class="text-sm text-green-600">
+                Paid Date:
+                ${formatDate(bill.paidDate)}
+              </p>
+              `
+            :
+            ""
           }
 
           </div>
 
-          <div>
+          <div class="text-right">
             ${status}
           </div>
 
         </div>
+
+
+        <div class="flex flex-wrap gap-2 mt-3">
+
+          ${bill.fileData
+            ?
+            `
+            <button
+              onclick="viewBill('${bill.id}')"
+              class="px-3 py-1 bg-blue-600 text-white rounded">
+              View Bill
+            </button>
+            `
+            :
+            ""
+          }
+
+          ${bill.fileData
+            ?
+            `
+            <button
+              onclick="downloadBill('${bill.id}')"
+              class="px-3 py-1 bg-gray-600 text-white rounded">
+              Open / Save
+            </button>
+            `
+            :
+            ""
+          }
+
+        </div>
+
       `;
 
 
-        list.appendChild(row);
+        container.appendChild(box);
 
       });
+
     }
 
 
-    /*
-      ADD MORE BORROWING
-    */
 
-    document.getElementById("addAmountBtn")
-      .addEventListener("click", () => {
+    /* ======================================================
+       OWNER PAYMENT HISTORY
+    ====================================================== */
 
-        document.getElementById("amountModal")
-          .classList.remove("hidden");
+    function renderOwnerPayments(owner) {
 
-        document.getElementById("amountForm").reset();
+      const container =
+        $("ownerPayments");
 
-        document.getElementById("newDateInput")
-          .value = today();
-
-      });
+      container.innerHTML = "";
 
 
-    document.getElementById("cancelAmountBtn")
-      .addEventListener("click", () => {
+      if (!owner.payments.length) {
 
-        document.getElementById("amountModal")
-          .classList.add("hidden");
+        container.innerHTML = `
+        <p class="text-gray-500">
+          No payments recorded.
+        </p>
+      `;
 
-      });
+        return;
 
-
-    document.getElementById("amountForm")
-      .addEventListener("submit", function (e) {
-
-        e.preventDefault();
+      }
 
 
-        const amount =
-          Number(document.getElementById("newAmountInput").value);
+      owner.payments.forEach(payment => {
 
-        const date =
-          document.getElementById("newDateInput").value;
-
-
-        const borrowers = loadBorrowers();
-
-        const borrower =
-          borrowers.find(b => b.id === selectedBorrowerId);
+        const box =
+          document.createElement("div");
 
 
-        if (!borrower) return;
+        box.className =
+          "border-2 rounded-lg p-3";
 
 
-        borrower.borrowings.push({
+        box.innerHTML = `
 
-          id: generateId(),
+        <p class="font-bold">
+          ${money(payment.amount)}
+        </p>
 
-          amount,
+        <p class="text-sm text-gray-500">
+          Paid Date:
+          ${formatDate(payment.date)}
+        </p>
 
-          date,
-
-          paid: 0
-
-        });
-
-
-        saveBorrowers(borrowers);
+      `;
 
 
-        document.getElementById("amountModal")
-          .classList.add("hidden");
-
-
-        openProfile(selectedBorrowerId);
-
-        renderBorrowers();
+        container.appendChild(box);
 
       });
 
-
-    /*
-      PAID BUTTON
-    */
-
-    document.getElementById("paidBtn")
-      .addEventListener("click", () => {
-
-        const borrowers = loadBorrowers();
-
-        const borrower =
-          borrowers.find(b => b.id === selectedBorrowerId);
-
-        if (!borrower) return;
+    }
 
 
-        const totals = getTotals(borrower);
+
+    /* ======================================================
+       OWNER ADD BILL
+    ====================================================== */
+
+    $("ownerAddBtn").onclick = () => {
+
+      $("billForm").reset();
+
+      $("billDate").value = today();
+
+      $("ocrStatus").textContent = "";
+
+      showModal($("billModal"));
+
+    };
 
 
-        if (totals.remaining <= 0) {
-
-          alert("There is no remaining amount to pay.");
-
-          return;
-        }
+    $("cancelBill").onclick = () =>
+      hideModal($("billModal"));
 
 
-        document.getElementById("paidInput").value = "";
+
+    /* ======================================================
+       PHOTO OCR
+    ====================================================== */
+
+    $("billPhoto").addEventListener(
+      "change",
+      async function () {
+
+        const file = this.files[0];
+
+        if (!file) return;
 
 
-        document.getElementById("paidModal")
-          .classList.remove("hidden");
-
-      });
+        $("ocrStatus").textContent =
+          "Reading bill photo...";
 
 
-    document.getElementById("cancelPaidBtn")
-      .addEventListener("click", () => {
+        try {
 
-        document.getElementById("paidModal")
-          .classList.add("hidden");
-
-      });
-
-
-    /*
-      PAYMENT PROCESSING
-  
-      Payment is matched against the oldest
-      unpaid borrowing first.
-    */
-
-    document.getElementById("paidForm")
-      .addEventListener("submit", function (e) {
-
-        e.preventDefault();
+          const result =
+            await Tesseract.recognize(
+              file,
+              "eng"
+            );
 
 
-        let payment =
-          Number(document.getElementById("paidInput").value);
+          const text =
+            result.data.text;
 
 
-        if (payment <= 0) {
-
-          alert("Enter a valid amount.");
-
-          return;
-        }
+          extractBillDetails(text);
 
 
-        const borrowers = loadBorrowers();
-
-        const borrower =
-          borrowers.find(b => b.id === selectedBorrowerId);
+          $("billText").value =
+            text;
 
 
-        if (!borrower) return;
+          $("ocrStatus").textContent =
+            "Bill read successfully. Please check the extracted details.";
 
+        } catch (error) {
 
-        const totals = getTotals(borrower);
+          console.error(error);
 
-
-        /*
-          If payment is greater than the current
-          debt, the extra becomes credit.
-        */
-
-        let remainingPayment = payment;
-
-
-        for (const item of borrower.borrowings) {
-
-          const unpaid =
-            Number(item.amount) - Number(item.paid || 0);
-
-
-          if (unpaid <= 0) continue;
-
-
-          const amountToPay =
-            Math.min(remainingPayment, unpaid);
-
-
-          item.paid =
-            Number(item.paid || 0) + amountToPay;
-
-
-          remainingPayment -= amountToPay;
-
-
-          if (remainingPayment <= 0) break;
+          $("ocrStatus").textContent =
+            "Could not read the photo. Please enter the details manually.";
 
         }
 
+      }
+    );
 
-        /*
-          Extra payment becomes shop credit.
-        */
 
-        if (remainingPayment > 0) {
 
-          borrower.shopCredit =
-            Number(borrower.shopCredit || 0)
-            + remainingPayment;
+    /* ======================================================
+       PDF TEXT EXTRACTION
+    ====================================================== */
+
+    $("billPdf").addEventListener(
+      "change",
+      async function () {
+
+        const file = this.files[0];
+
+        if (!file) return;
+
+
+        $("ocrStatus").textContent =
+          "Reading PDF...";
+
+
+        try {
+
+          const arrayBuffer =
+            await file.arrayBuffer();
+
+
+          const pdfjs =
+            window.pdfjsLib;
+
+
+          /*
+            PDF.js may expose itself differently
+            depending on browser/module loading.
+          */
+
+          if (!pdfjs) {
+
+            $("ocrStatus").textContent =
+              "PDF reader is loading. Please try again.";
+
+            return;
+
+          }
+
+
+          const pdf =
+            await pdfjs.getDocument({
+              data: arrayBuffer
+            }).promise;
+
+
+          let fullText = "";
+
+
+          for (
+            let pageNumber = 1;
+            pageNumber <= pdf.numPages;
+            pageNumber++
+          ) {
+
+            const page =
+              await pdf.getPage(pageNumber);
+
+
+            const content =
+              await page.getTextContent();
+
+
+            const pageText =
+              content.items
+                .map(item => item.str)
+                .join(" ");
+
+
+            fullText +=
+              pageText + "\n";
+
+          }
+
+
+          $("billText").value =
+            fullText;
+
+
+          extractBillDetails(fullText);
+
+
+          $("ocrStatus").textContent =
+            "PDF read successfully. Please check the extracted details.";
+
+        } catch (error) {
+
+          console.error(error);
+
+          $("ocrStatus").textContent =
+            "Could not read the PDF automatically. Please enter the details manually.";
 
         }
 
-
-        saveBorrowers(borrowers);
-
-
-        document.getElementById("paidModal")
-          .classList.add("hidden");
+      }
+    );
 
 
-        openProfile(selectedBorrowerId);
 
-        renderBorrowers();
+    /* ======================================================
+       BILL DETAIL EXTRACTION
+    ====================================================== */
+
+    function extractBillDetails(text) {
+
+      if (!text) return;
+
+
+      const lines =
+        text
+          .split(/\r?\n/)
+          .map(x => x.trim())
+          .filter(Boolean);
+
+
+      /*
+        Try to find total amount.
+      */
+
+      const totalRegex =
+        /(?:grand\s*total|total\s*amount|net\s*total|total|amount\s*due)\s*[:\-]?\s*(?:₹|rs\.?|inr)?\s*([\d,]+(?:\.\d{1,2})?)/i;
+
+
+      const totalMatch =
+        text.match(totalRegex);
+
+
+      if (totalMatch) {
+
+        $("billAmount").value =
+          totalMatch[1].replace(/,/g, "");
+
+      }
+
+
+      /*
+        Try to find date.
+      */
+
+      const dateRegex =
+        /(?:date|bill\s*date|invoice\s*date)\s*[:\-]?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i;
+
+
+      const dateMatch =
+        text.match(dateRegex);
+
+
+      if (dateMatch) {
+
+        const parts =
+          dateMatch[1].split(/[\/\-]/);
+
+
+        let day = parts[0];
+        let month = parts[1];
+        let year = parts[2];
+
+
+        if (year.length === 2) {
+          year = "20" + year;
+        }
+
+
+        $("billDate").value =
+          `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+
+      }
+
+
+      /*
+        Try to use the first useful line
+        as owner/supplier name.
+      */
+
+      if (lines.length) {
+
+        const ignored =
+          /^(invoice|bill|tax invoice|date|total|amount|gst|phone|mobile|address)$/i;
+
+
+        const possibleName =
+          lines.find(line =>
+            line.length > 2 &&
+            line.length < 80 &&
+            !ignored.test(line)
+          );
+
+
+        if (possibleName) {
+
+          $("billOwnerName").value =
+            possibleName;
+
+        }
+
+      }
+
+    }
+
+
+
+    /* ======================================================
+       SAVE BILL
+    ====================================================== */
+
+    $("billForm").onsubmit = async function (e) {
+
+      e.preventDefault();
+
+
+      const pdf =
+        $("billPdf").files[0];
+
+      const photo =
+        $("billPhoto").files[0];
+
+
+      let file = pdf || photo;
+
+      let fileData = null;
+      let fileName = "";
+      let fileType = "";
+
+
+      /*
+        Store the uploaded file as Base64
+        so it can be opened later.
+      */
+
+      if (file) {
+
+        fileData =
+          await fileToDataURL(file);
+
+        fileName =
+          file.name;
+
+        fileType =
+          file.type;
+
+      }
+
+
+      const amount =
+        Number($("billAmount").value || 0);
+
+
+      const date =
+        $("billDate").value ||
+        today();
+
+
+      const detectedOwnerName =
+        $("billOwnerName").value.trim();
+
+
+      const text =
+        $("billText").value.trim();
+
+
+      const owners = loadOwners();
+
+      const owner =
+        owners.find(o =>
+          o.id === selectedOwnerId
+        );
+
+
+      if (!owner) return;
+
+
+      owner.bills.push({
+
+        id: generateId(),
+
+        amount,
+
+        date,
+
+        detectedOwnerName,
+
+        text,
+
+        fileData,
+
+        fileName,
+
+        fileType,
+
+        paid: 0,
+
+        paidDate: null
 
       });
 
 
-    /*
-      EDIT BORROWER
-    */
-
-    document.getElementById("editBorrowerBtn")
-      .addEventListener("click", () => {
-
-        const borrowers = loadBorrowers();
-
-        const borrower =
-          borrowers.find(b => b.id === selectedBorrowerId);
-
-        if (!borrower) return;
+      saveOwners(owners);
 
 
-        document.getElementById("profileModal")
-          .classList.add("hidden");
+      hideModal($("billModal"));
+
+      renderOwners();
+
+      openOwnerProfile(selectedOwnerId);
+
+    };
 
 
-        document.getElementById("nameInput").value =
-          borrower.name;
 
-        document.getElementById("phoneInput").value =
-          borrower.phone || "";
+    /* ======================================================
+       OWNER PAYMENT
+    ====================================================== */
 
-        document.getElementById("addressInput").value =
-          borrower.address || "";
+    $("ownerPayBtn").onclick = () => {
 
+      const owners = loadOwners();
 
-        /*
-          Editing is intentionally limited to
-          borrower basic information.
-          Borrowing history is preserved.
-        */
-
-        const form =
-          document.getElementById("borrowerForm");
+      const owner =
+        owners.find(o =>
+          o.id === selectedOwnerId
+        );
 
 
-        form.dataset.editing = borrower.id;
+      if (!owner) return;
 
 
-        document.getElementById("borrowerModalTitle")
-          .textContent = "Edit Borrower";
+      const totals =
+        ownerTotals(owner);
 
 
-        document.getElementById("amountInput").required = false;
+      if (totals.remaining <= 0) {
 
-        document.getElementById("dateInput").required = false;
+        alert(
+          "There is no remaining amount to pay."
+        );
+
+        return;
+
+      }
 
 
-        document.getElementById("borrowerModal")
-          .classList.remove("hidden");
+      $("ownerPaidAmount").value = "";
+
+      $("ownerPaidDate").value = today();
+
+      showModal($("ownerPayModal"));
+
+    };
+
+
+    $("cancelOwnerPay").onclick = () =>
+      hideModal($("ownerPayModal"));
+
+
+    $("ownerPayForm").onsubmit = function (e) {
+
+      e.preventDefault();
+
+
+      let payment =
+        Number($("ownerPaidAmount").value);
+
+
+      const paymentDate =
+        $("ownerPaidDate").value;
+
+
+      if (payment <= 0) return;
+
+
+      const owners = loadOwners();
+
+      const owner =
+        owners.find(o =>
+          o.id === selectedOwnerId
+        );
+
+
+      if (!owner) return;
+
+
+      /*
+        Apply payment to oldest unpaid
+        bill first.
+      */
+
+      for (const bill of owner.bills) {
+
+        if (payment <= 0) break;
+
+
+        const unpaid =
+          Number(bill.amount) -
+          Number(bill.paid || 0);
+
+
+        if (unpaid <= 0) continue;
+
+
+        const used =
+          Math.min(payment, unpaid);
+
+
+        bill.paid =
+          Number(bill.paid || 0)
+          + used;
+
+
+        bill.paidDate =
+          paymentDate;
+
+
+        payment -= used;
+
+      }
+
+
+      /*
+        Save payment history.
+      */
+
+      const originalPayment =
+        Number($("ownerPaidAmount").value);
+
+
+      owner.payments.push({
+
+        id: generateId(),
+
+        amount: originalPayment,
+
+        date: paymentDate
 
       });
 
 
-    /*
-      HANDLE EDIT SAVE
-    */
+      /*
+        If payment is greater than total debt,
+        keep the extra as owner credit.
+      */
 
-    document.getElementById("borrowerForm")
-      .addEventListener("submit", function (e) {
+      if (payment > 0) {
 
-        if (!this.dataset.editing) return;
+        owner.extraPaid =
+          Number(owner.extraPaid || 0)
+          + payment;
 
-        e.preventDefault();
-
-
-        const id = this.dataset.editing;
-
-        const borrowers = loadBorrowers();
-
-        const borrower =
-          borrowers.find(b => b.id === id);
-
-        if (!borrower) return;
+      }
 
 
-        borrower.name =
-          document.getElementById("nameInput").value.trim();
-
-        borrower.phone =
-          document.getElementById("phoneInput").value.trim();
-
-        borrower.address =
-          document.getElementById("addressInput").value.trim();
+      saveOwners(owners);
 
 
-        saveBorrowers(borrowers);
+      hideModal($("ownerPayModal"));
+
+      renderOwners();
+
+      openOwnerProfile(selectedOwnerId);
+
+    };
 
 
-        delete this.dataset.editing;
+
+    /* ======================================================
+       OWNER EDIT
+    ====================================================== */
+
+    $("ownerEditBtn").onclick = () => {
+
+      const owners = loadOwners();
+
+      const owner =
+        owners.find(o =>
+          o.id === selectedOwnerId
+        );
 
 
-        document.getElementById("amountInput").required = true;
-
-        document.getElementById("dateInput").required = true;
+      if (!owner) return;
 
 
-        document.getElementById("borrowerModalTitle")
-          .textContent = "Add Borrower";
+      $("ownerEditId").value =
+        owner.id;
+
+      $("ownerName").value =
+        owner.name;
+
+      $("ownerPhone").value =
+        owner.phone || "";
+
+      $("ownerAddress").value =
+        owner.address || "";
+
+      $("ownerProducts").value =
+        owner.products || "";
 
 
-        document.getElementById("borrowerModal")
-          .classList.add("hidden");
+      $("ownerModalTitle").textContent =
+        "Edit Owner / Supplier";
 
 
-        renderBorrowers();
+      hideModal($("ownerProfileModal"));
 
-        openProfile(id);
+      showModal($("ownerModal"));
+
+    };
+
+
+
+    /* ======================================================
+       OWNER DELETE
+    ====================================================== */
+
+    $("ownerDeleteBtn").onclick = () => {
+
+      if (!confirm(
+        "Delete this owner and all bills permanently?"
+      )) return;
+
+
+      let owners = loadOwners();
+
+
+      owners =
+        owners.filter(o =>
+          o.id !== selectedOwnerId
+        );
+
+
+      saveOwners(owners);
+
+      hideModal($("ownerProfileModal"));
+
+      renderOwners();
+
+    };
+
+
+    $("closeOwnerProfile").onclick = () =>
+      hideModal($("ownerProfileModal"));
+
+
+
+    /* ======================================================
+       VIEW BILL
+    ====================================================== */
+
+    window.viewBill = function (id) {
+
+      const owners = loadOwners();
+
+      const owner =
+        owners.find(o =>
+          o.id === selectedOwnerId
+        );
+
+
+      if (!owner) return;
+
+
+      const bill =
+        owner.bills.find(b =>
+          b.id === id
+        );
+
+
+      if (!bill || !bill.fileData) return;
+
+
+      const win =
+        window.open();
+
+
+      if (!win) {
+
+        alert(
+          "Please allow pop-ups to view the bill."
+        );
+
+        return;
+
+      }
+
+
+      if (
+        bill.fileType === "application/pdf"
+      ) {
+
+        win.document.write(`
+        <iframe
+          src="${bill.fileData}"
+          style="width:100%;height:100vh;border:0;">
+        </iframe>
+      `);
+
+      } else {
+
+        win.document.write(`
+        <img
+          src="${bill.fileData}"
+          style="max-width:100%;display:block;margin:auto;">
+      `);
+
+      }
+
+    };
+
+
+
+    /* ======================================================
+       DOWNLOAD / OPEN BILL
+    ====================================================== */
+
+    window.downloadBill = function (id) {
+
+      const owners = loadOwners();
+
+      const owner =
+        owners.find(o =>
+          o.id === selectedOwnerId
+        );
+
+
+      if (!owner) return;
+
+
+      const bill =
+        owner.bills.find(b =>
+          b.id === id
+        );
+
+
+      if (!bill || !bill.fileData) return;
+
+
+      const link =
+        document.createElement("a");
+
+
+      link.href =
+        bill.fileData;
+
+
+      link.download =
+        bill.fileName ||
+        "bill";
+
+
+      link.target = "_blank";
+
+
+      link.click();
+
+    };
+
+
+
+    /* ======================================================
+       UTILITIES
+    ====================================================== */
+
+    function formatDate(date) {
+
+      if (!date) return "—";
+
+
+      const d =
+        new Date(date + "T00:00:00");
+
+
+      return d.toLocaleDateString(
+        "en-IN"
+      );
+
+    }
+
+
+    function escapeHtml(value) {
+
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+    }
+
+
+    function fileToDataURL(file) {
+
+      return new Promise((resolve, reject) => {
+
+        const reader =
+          new FileReader();
+
+
+        reader.onload =
+          () => resolve(reader.result);
+
+
+        reader.onerror =
+          reject;
+
+
+        reader.readAsDataURL(file);
 
       });
 
+    }
+
+
+
+    /* ======================================================
+       INITIALISE
+    ====================================================== */
 
     /*
-      DELETE BORROWER
-    */
-
-    document.getElementById("deleteBorrowerBtn")
-      .addEventListener("click", () => {
-
-        if (!confirm("Delete this borrower permanently?"))
-          return;
-
-
-        let borrowers = loadBorrowers();
-
-        borrowers =
-          borrowers.filter(b =>
-            b.id !== selectedBorrowerId);
-
-
-        saveBorrowers(borrowers);
-
-
-        document.getElementById("profileModal")
-          .classList.add("hidden");
-
-
-        renderBorrowers();
-
-      });
-
-
-    /*
-      CLOSE PROFILE
-    */
-
-    document.getElementById("closeProfile")
-      .addEventListener("click", () => {
-
-        document.getElementById("profileModal")
-          .classList.add("hidden");
-
-      });
-
-
-    /*
-      INITIALISE
+      Load everything when the page starts.
     */
 
     renderBorrowers();
+
+    renderOwners();
 
   </script>
 
